@@ -1,0 +1,66 @@
+# configs/cv.yaml
+# Configuration de la validation croisée anti-leakage
+
+# ─────────────────────────────────────────────
+# STRATÉGIE DE SPLIT
+# ─────────────────────────────────────────────
+split:
+  mode: group          # group | stratified | time | holdout
+                       #   group      → GroupKFold (recommandé : anti-leakage compte)
+                       #   stratified → StratifiedKFold (si 1 ligne/compte)
+                       #   time       → TimeSplit (compétitions temporelles)
+                       #   holdout    → Split 3-voies fixe (train/val/test)
+  n_splits: 5          # Nombre de folds
+  val_size: 0.15       # Fraction val (holdout seulement)
+  test_size: 0.15      # Fraction test (holdout seulement)
+  random_state: 42
+
+# ─────────────────────────────────────────────
+# TIME SPLIT (si mode=time)
+# ─────────────────────────────────────────────
+time_split:
+  gap_days: 7          # Jours de garde entre train et val
+                       # Évite la contamination par des comptes récents
+
+# ─────────────────────────────────────────────
+# MÉTRIQUES
+# ─────────────────────────────────────────────
+metrics:
+  primary: roc_auc     # Métrique principale pour le tri et l'évaluation
+  all:                 # Toutes les métriques calculées
+    - roc_auc
+    - pr_auc
+    - f1
+    - precision
+    - recall
+    - balanced_accuracy
+    - brier_score
+
+# ─────────────────────────────────────────────
+# SEUIL DE DÉCISION
+# ─────────────────────────────────────────────
+threshold:
+  metric: f1           # f1 | precision | recall | balanced | conservative
+                       #   f1           → maximise F1 (équilibre)
+                       #   precision    → minimise faux positifs
+                       #   recall       → maximise la détection
+                       #   conservative → seuil fixe = 0.65 (prudent)
+  uncertainty_margin: 0.12  # Zone grise autour du seuil → défaut humain
+  default_uncertain: 0      # Label par défaut dans la zone grise (0=humain)
+
+# ─────────────────────────────────────────────
+# MODÈLES À COMPARER
+# ─────────────────────────────────────────────
+comparison:
+  enabled: false       # Comparer plusieurs modèles en CV
+  models:
+    - lightgbm
+    - xgboost
+    - logistic_regression
+
+# ─────────────────────────────────────────────
+# MODÈLE FINAL
+# ─────────────────────────────────────────────
+final_model:
+  fit_on_full_data: true   # Re-entraîner sur train+val après CV
+  use_val_for_early_stop: true

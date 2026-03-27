@@ -1,0 +1,70 @@
+# configs/features.yaml
+# Activation et paramétrage des modules de feature engineering
+
+# ─────────────────────────────────────────────
+# MODULES ACTIFS
+# Le profiler peut surcharger ces flags automatiquement
+# ─────────────────────────────────────────────
+modules:
+  tabular:     true    # Toujours actif (baseline)
+  temporal:    true    # Actif si timestamps présents
+  text_basic:  true    # TF-IDF léger, toujours actif si texte dispo
+  structural:  true    # Actif si colonnes d'ID/source présentes
+  relational:  true    # Actif seulement si edges_df fourni
+  embeddings:  false   # Optionnel — nécessite sentence-transformers
+
+# ─────────────────────────────────────────────
+# TABULAR
+# ─────────────────────────────────────────────
+tabular:
+  min_posts_for_freq: 2     # nb min de posts pour calculer la fréquence
+  account_age_cap_days: 3650 # âge max du compte en jours (10 ans)
+
+# ─────────────────────────────────────────────
+# TEMPORAL
+# ─────────────────────────────────────────────
+temporal:
+  plan_a_min_posts: 5        # Plan A (précis) si >= N posts avec timestamps
+  burst_window_seconds: 60   # Fenêtre de détection de burst
+  night_hours: [22, 6]       # Définition des heures de nuit [début, fin]
+  entropy_bins: 24           # Bins pour l'entropie horaire
+
+# ─────────────────────────────────────────────
+# TEXT BASIC (TF-IDF features)
+# ─────────────────────────────────────────────
+text_basic:
+  ngram_max_n: 3             # N-grammes jusqu'à N
+  quasi_dup_threshold: 0.85  # Seuil Jaccard pour quasi-duplication
+  max_posts_sample: 50       # Limite d'échantillonnage pour O(n²)
+  min_posts_for_sim: 2       # Nb min de posts pour la similarité
+
+# ─────────────────────────────────────────────
+# STRUCTURAL
+# ─────────────────────────────────────────────
+structural:
+  batch_window_seconds: 60   # Fenêtre de création en batch
+
+# ─────────────────────────────────────────────
+# RELATIONAL (graphe)
+# ─────────────────────────────────────────────
+relational:
+  max_neighbors_clustering: 30  # Limite clustering approx
+  sync_window_hours: 1.0        # Fenêtre de synchronisation temporelle
+
+# ─────────────────────────────────────────────
+# TEXT EMBEDDINGS (optionnel)
+# ─────────────────────────────────────────────
+embeddings:
+  model_name: "all-MiniLM-L6-v2"   # Modèle léger recommandé
+  max_posts_per_account: 30         # Posts max encodés par compte
+  batch_size: 64
+  device: null                      # null = auto (cpu si pas de GPU)
+  cache_folder: "artifacts/cache/sentence_transformers"
+
+# ─────────────────────────────────────────────
+# ASSEMBLEUR
+# ─────────────────────────────────────────────
+assembler:
+  feature_map_path: "artifacts/feature_map.json"
+  fill_missing: -999.0              # Valeur de remplacement des NaN
+  drop_zero_variance: true          # Supprimer les colonnes constantes

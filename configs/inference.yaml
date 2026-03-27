@@ -1,0 +1,65 @@
+# configs/inference.yaml
+# Configuration du pipeline d'inférence et de soumission
+
+# ─────────────────────────────────────────────
+# MODÈLE À CHARGER
+# ─────────────────────────────────────────────
+model:
+  path: "artifacts/models/model_v1"          # Sans extension (.joblib auto-ajouté)
+  cls: lightgbm                              # lightgbm | xgboost | catboost | logistic_regression
+  text_model_path: "artifacts/models/text_model_v1"  # null = désactivé
+  feature_map_path: "artifacts/feature_map.json"
+
+# ─────────────────────────────────────────────
+# DÉCISION
+# ─────────────────────────────────────────────
+decision:
+  threshold: 0.5             # Seuil de décision (peut être écrasé par le seuil CV)
+  use_optimized_threshold: true  # Utiliser le seuil optimisé sauvegardé
+  uncertainty_margin: 0.12   # Zone grise → défaut humain
+  default_uncertain: 0       # 0=humain (prudent), 1=bot (agressif)
+
+# ─────────────────────────────────────────────
+# ENSEMBLE EN INFÉRENCE
+# ─────────────────────────────────────────────
+ensemble:
+  enabled: false             # Activer si plusieurs modèles disponibles
+  method: weighted_mean
+  models:                    # Chemins des modèles à fusionner
+    - path: "artifacts/models/lgb_v1"
+      cls: lightgbm
+      weight: 1.5
+    - path: "artifacts/models/xgb_v1"
+      cls: xgboost
+      weight: 1.0
+
+# ─────────────────────────────────────────────
+# FORMAT DE SOUMISSION
+# ─────────────────────────────────────────────
+submission:
+  format: default            # default | proba_only | full | custom
+                             #   default    → account_id + label
+                             #   proba_only → account_id + prob_bot
+                             #   full       → tout inclus
+  file_format: csv           # csv | json | jsonl
+  id_col: account_id         # Nom de la colonne ID dans la soumission
+  label_col: label           # Nom de la colonne label
+  proba_col: prob_bot        # Nom de la colonne probabilité
+  sort_by_id: true
+  add_metadata: true         # Générer un .meta.json à côté
+
+# ─────────────────────────────────────────────
+# PREPROCESSING À L'INFÉRENCE
+# ─────────────────────────────────────────────
+preprocessing:
+  normalize_columns: true
+  clean_text: true
+  parse_dates: true
+  handle_missing: true       # Imputer les valeurs manquantes comme à l'entraînement
+
+# ─────────────────────────────────────────────
+# PERFORMANCE
+# ─────────────────────────────────────────────
+performance:
+  batch_size: 10000          # Nb de lignes traitées par batch (null = tout en mémoire)
+  n_jobs: -1

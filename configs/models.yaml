@@ -1,0 +1,111 @@
+# configs/models.yaml
+# Configuration des modèles de classification
+
+# ─────────────────────────────────────────────
+# MODÈLE ACTIF POUR L'ENTRAÎNEMENT
+# ─────────────────────────────────────────────
+active_model: lightgbm   # lightgbm | xgboost | catboost | logistic_regression
+
+# ─────────────────────────────────────────────
+# LOGISTIC REGRESSION (baseline rapide)
+# ─────────────────────────────────────────────
+logistic_regression:
+  C: 1.0
+  penalty: l2
+  solver: lbfgs
+  max_iter: 1000
+  class_weight: balanced
+  random_state: 42
+
+# ─────────────────────────────────────────────
+# LIGHTGBM (modèle principal recommandé)
+# ─────────────────────────────────────────────
+lightgbm:
+  n_estimators: 500
+  learning_rate: 0.05
+  num_leaves: 63
+  max_depth: -1
+  min_child_samples: 20
+  subsample: 0.8
+  colsample_bytree: 0.8
+  reg_alpha: 0.1
+  reg_lambda: 0.1
+  class_weight: balanced      # null pour utiliser scale_pos_weight
+  scale_pos_weight: null      # null = auto calculé depuis y_train
+  early_stopping_rounds: 50
+  verbose: -1
+  random_state: 42
+
+# ─────────────────────────────────────────────
+# XGBOOST
+# ─────────────────────────────────────────────
+xgboost:
+  n_estimators: 500
+  learning_rate: 0.05
+  max_depth: 6
+  subsample: 0.8
+  colsample_bytree: 0.8
+  gamma: 0.1
+  reg_alpha: 0.1
+  reg_lambda: 1.0
+  scale_pos_weight: null      # null = auto
+  tree_method: hist
+  eval_metric: auc
+  early_stopping_rounds: 50
+  random_state: 42
+  verbosity: 0
+
+# ─────────────────────────────────────────────
+# CATBOOST
+# ─────────────────────────────────────────────
+catboost:
+  iterations: 500
+  learning_rate: 0.05
+  depth: 6
+  l2_leaf_reg: 3.0
+  border_count: 128
+  auto_class_weights: Balanced
+  early_stopping_rounds: 50
+  random_seed: 42
+  verbose: 0
+
+# ─────────────────────────────────────────────
+# MODÈLE TEXTE TF-IDF (score texte indépendant)
+# ─────────────────────────────────────────────
+text_model:
+  enabled: true
+  vectorizer: word             # word | char | char_wb
+  ngram_range: [1, 2]
+  max_features: 10000
+  classifier: lr               # lr | sgd
+  min_docs: 1
+
+# ─────────────────────────────────────────────
+# CALIBRATION
+# ─────────────────────────────────────────────
+calibration:
+  enabled: true
+  method: platt                # platt | isotonic
+  n_bins: 10                   # Bins pour le calcul de l'ECE
+
+# ─────────────────────────────────────────────
+# ENSEMBLE FINAL
+# ─────────────────────────────────────────────
+ensemble:
+  enabled: true
+  method: weighted_mean        # weighted_mean | mean | max | rank_mean
+  min_modules: 1               # Modules minimum requis
+  weights:
+    tabular:    1.5
+    temporal:   1.2
+    text:       0.8
+    structural: 0.5
+    relational: 0.6
+
+# ─────────────────────────────────────────────
+# SAUVEGARDES
+# ─────────────────────────────────────────────
+save:
+  model_path: "artifacts/models/model_v1"
+  text_model_path: "artifacts/models/text_model_v1"
+  overwrite: false

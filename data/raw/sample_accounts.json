@@ -1,0 +1,5 @@
+[
+  {"user_id": "u001", "created_at": "2023-01-15", "screen_name": "newsbot99", "bio": "", "followers": 45, "following": 300, "statuses_count": 1200, "label": 1},
+  {"user_id": "u002", "created_at": "2022-06-01", "screen_name": "julien_photo", "bio": "Photographe a Lyon", "followers": 120, "following": 80, "statuses_count": 50, "label": 0},
+  {"user_id": "u003", "created_at": "2023-03-10", "screen_name": "bot_acc_4821", "bio": "", "followers": 10, "following": 9800, "statuses_count": 8500, "label": 1}
+]

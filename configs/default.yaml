@@ -1,0 +1,44 @@
+# configs/default.yaml
+# Configuration racine du pipeline BotOrNot
+# Toutes les autres configs héritent de ce fichier.
+
+# ─────────────────────────────────────────────
+# CHEMINS
+# ─────────────────────────────────────────────
+paths:
+  data_raw:      data/raw
+  data_processed: data/processed
+  artifacts:     artifacts
+  models:        artifacts/models
+  submissions:   artifacts/submissions
+  logs:          artifacts/logs
+  cache:         artifacts/cache
+
+# ─────────────────────────────────────────────
+# PIPELINE
+# ─────────────────────────────────────────────
+pipeline:
+  mode: train          # train | predict | validate
+  random_state: 42
+  n_jobs: -1           # nb de threads (-1 = tous)
+  verbose: true
+
+# ─────────────────────────────────────────────
+# DONNÉES
+# ─────────────────────────────────────────────
+data:
+  format: auto         # auto | csv | json | jsonl
+  encoding: utf-8
+  separator: ","       # CSV seulement
+  # Limites de chargement (null = pas de limite)
+  max_rows: null
+  max_accounts: null
+
+# ─────────────────────────────────────────────
+# LOGGING
+# ─────────────────────────────────────────────
+logging:
+  level: INFO          # DEBUG | INFO | WARNING | ERROR
+  format: "%(asctime)s [%(levelname)s] %(name)s — %(message)s"
+  file: null           # null = console seulement
+                       # ex: "artifacts/logs/run.log"
