@@ -163,6 +163,7 @@ class FeatureAssembler:
         "text_basic",
         "text_embeddings",
         "structural",
+        "coordination",
         "relational",
     ]
 

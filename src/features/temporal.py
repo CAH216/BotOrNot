@@ -45,20 +45,29 @@ logger = logging.getLogger(__name__)
 
 # Colonnes Plan A — préfixe "t_"
 PLAN_A_COLS = [
-    "t_ipt_mean",            # inter-posting time moyen (secondes)
-    "t_ipt_std",             # écart-type IPT
-    "t_ipt_cv",              # coefficient de variation IPT (std/mean)
-    "t_ipt_min",             # IPT minimum
-    "t_ipt_max",             # IPT maximum = max gap entre posts
-    "t_night_ratio",         # proportion de posts entre 23h et 6h
-    "t_hour_entropy",        # entropie de Shannon sur les heures de posts
-    "t_weekday_entropy",     # entropie sur les jours de la semaine
-    "t_burst_score",         # fraction de posts en burst (<60s d'intervalle)
-    "t_sleep_gap",           # plus longue pause (heures estimées)
-    "t_active_hours_count",  # nb d'heures distinctes avec au moins 1 post
-    "t_posts_per_hour_max",  # max de posts dans une fenêtre d'1 heure
-    "t_activity_span_hours", # durée totale d'activité (premier au dernier post)
-    "t_n_posts",             # nb total de posts utilisé pour le calcul
+    "t_ipt_mean",              # inter-posting time moyen (secondes)
+    "t_ipt_std",               # écart-type IPT
+    "t_ipt_cv",                # coefficient de variation IPT (std/mean)
+    "t_ipt_min",               # IPT minimum
+    "t_ipt_max",               # IPT maximum = max gap entre posts
+    "t_night_ratio",           # proportion de posts entre 23h et 6h
+    # V1.1 — activité nuit fine
+    "t_deep_night_ratio",      # proportion de posts entre 0h et 3h (bots)
+    "t_late_night_ratio",      # proportion de posts entre 3h et 6h
+    "t_hour_entropy",          # entropie de Shannon sur les heures de posts
+    "t_weekday_entropy",       # entropie sur les jours de la semaine
+    "t_burst_score",           # fraction de posts en burst (<60s d'intervalle)
+    # V1.1 — densité de bursts
+    "t_burst_density",         # nb moyen de posts dans les fenêtres de 60s
+    "t_ipt_log_mean",          # log(1 + ipt_mean) pour stabiliser la distribution
+    "t_sleep_gap",             # plus longue pause (heures estimées)
+    "t_active_hours_count",    # nb d'heures distinctes avec au moins 1 post
+    "t_posts_per_hour_max",    # max de posts dans une fenêtre d'1 heure
+    "t_activity_span_hours",   # durée totale d'activité (premier au dernier post)
+    # V1.1 — régularité inter-journée
+    "t_interday_regularity",   # posts_per_day_std / (posts_per_day_mean + 1)
+    "t_active_day_ratio",      # n_active_days / days_span
+    "t_n_posts",               # nb total de posts utilisé pour le calcul
 ]
 
 # Colonnes Plan B — préfixe "t_"
@@ -69,6 +78,9 @@ PLAN_B_COLS = [
     "t_weekend_ratio",       # fraction de posts le week-end
     "t_activity_density",    # n_active_days / days_span (régularité)
     "t_days_span",           # durée totale (jours depuis premier au dernier)
+    # V1.1
+    "t_interday_regularity", # posts_per_day_std / (posts_per_day_mean + 1)
+    "t_active_day_ratio",    # n_active_days / days_span
     "t_n_posts",             # nb total de posts
 ]
 
@@ -146,6 +158,12 @@ def _compute_plan_a(posts: pd.DataFrame) -> dict:
     night_mask  = (hours >= 23) | (hours <= 6)
     night_ratio = float(night_mask.mean())
 
+    # ── V1.1 — Activité nuit fine ─────────────────────────────────────────
+    deep_night_mask = (hours >= 0) & (hours < 3)
+    late_night_mask = (hours >= 3) & (hours < 6)
+    deep_night_ratio = float(deep_night_mask.mean())
+    late_night_ratio = float(late_night_mask.mean())
+
     # --- Entropie des heures (0-23) ---
     hour_entropy = _shannon_entropy(hours, n_bins=24)
 
@@ -154,6 +172,32 @@ def _compute_plan_a(posts: pd.DataFrame) -> dict:
 
     # --- Burst score : fraction d'IPT < 60s ---
     burst_score = float((ipt < 60).mean()) if not ipt.empty else 0.0
+
+    # ── V1.1 — Densité de bursts ──────────────────────────────────────────
+    # Nb moyen de posts consécutifs dans une fenêtre de 60s
+    if not ipt.empty:
+        burst_windows = (ipt < 60)
+        if burst_windows.any():
+            # Taille des runs de bursts consécutifs
+            run_sizes = []
+            count = 1
+            for b in burst_windows:
+                if b:
+                    count += 1
+                else:
+                    if count > 1:
+                        run_sizes.append(count)
+                    count = 1
+            if count > 1:
+                run_sizes.append(count)
+            burst_density = float(np.mean(run_sizes)) if run_sizes else 1.0
+        else:
+            burst_density = 1.0
+    else:
+        burst_density = np.nan
+
+    # ── V1.1 — Log(1 + ipt_mean) ─────────────────────────────────────────
+    ipt_log_mean = float(np.log1p(ipt_mean)) if not np.isnan(ipt_mean) else np.nan
 
     # --- Sleep gap : plus longue pause en heures ---
     sleep_gap = float(ipt_max / 3600.0) if not np.isnan(ipt_max) else np.nan
@@ -164,34 +208,53 @@ def _compute_plan_a(posts: pd.DataFrame) -> dict:
     # --- Max posts dans une fenêtre de 1 heure ---
     try:
         ts_series = ts.reset_index(drop=True)
-        # Rolling window de 3600 secondes
-        ts_unix = ts_series.astype(np.int64) / 1e9
-        counts_in_window = []
-        for i, t in enumerate(ts_unix):
-            window = ((ts_unix >= t) & (ts_unix < t + 3600)).sum()
-            counts_in_window.append(int(window))
+        ts_unix   = ts_series.astype(np.int64) / 1e9
+        counts_in_window = [
+            int(((ts_unix >= t) & (ts_unix < t + 3600)).sum())
+            for t in ts_unix
+        ]
         posts_per_hour_max = int(max(counts_in_window)) if counts_in_window else 0
     except Exception:
         posts_per_hour_max = 0
 
     # --- Durée totale d'activité en heures ---
-    span_seconds = float((ts.iloc[-1] - ts.iloc[0]).total_seconds())
-    activity_span = span_seconds / 3600.0
+    span_seconds   = float((ts.iloc[-1] - ts.iloc[0]).total_seconds())
+    activity_span  = span_seconds / 3600.0
+
+    # ── V1.1 — Régularité inter-journée ──────────────────────────────────
+    try:
+        dates          = ts.dt.date
+        date_counts    = pd.Series(dates).value_counts()
+        ppd_mean       = float(date_counts.mean())
+        ppd_std        = float(date_counts.std()) if len(date_counts) > 1 else 0.0
+        days_span      = max(int((dates.max() - dates.min()).days) + 1, 1)
+        n_active_days  = len(date_counts)
+        interday_reg   = round(ppd_std / (ppd_mean + 1), 4)
+        active_day_r   = round(n_active_days / days_span, 4)
+    except Exception:
+        interday_reg   = np.nan
+        active_day_r   = np.nan
 
     return {
-        "t_ipt_mean":            round(ipt_mean, 4) if not np.isnan(ipt_mean) else np.nan,
+        "t_ipt_mean":            round(ipt_mean, 4)         if not np.isnan(ipt_mean) else np.nan,
         "t_ipt_std":             round(ipt_std, 4),
-        "t_ipt_cv":              round(ipt_cv, 4) if not np.isnan(ipt_cv) else np.nan,
-        "t_ipt_min":             round(ipt_min, 4) if not np.isnan(ipt_min) else np.nan,
-        "t_ipt_max":             round(ipt_max, 4) if not np.isnan(ipt_max) else np.nan,
+        "t_ipt_cv":              round(ipt_cv, 4)           if not np.isnan(ipt_cv)   else np.nan,
+        "t_ipt_min":             round(ipt_min, 4)          if not np.isnan(ipt_min)  else np.nan,
+        "t_ipt_max":             round(ipt_max, 4)          if not np.isnan(ipt_max)  else np.nan,
         "t_night_ratio":         round(night_ratio, 4),
+        "t_deep_night_ratio":    round(deep_night_ratio, 4),
+        "t_late_night_ratio":    round(late_night_ratio, 4),
         "t_hour_entropy":        round(hour_entropy, 4),
         "t_weekday_entropy":     round(weekday_entropy, 4),
         "t_burst_score":         round(burst_score, 4),
-        "t_sleep_gap":           round(sleep_gap, 4) if not np.isnan(sleep_gap) else np.nan,
+        "t_burst_density":       round(burst_density, 4)    if not np.isnan(burst_density) else np.nan,
+        "t_ipt_log_mean":        round(ipt_log_mean, 4)     if not np.isnan(ipt_log_mean) else np.nan,
+        "t_sleep_gap":           round(sleep_gap, 4)        if not np.isnan(sleep_gap)    else np.nan,
         "t_active_hours_count":  active_hours,
         "t_posts_per_hour_max":  posts_per_hour_max,
         "t_activity_span_hours": round(activity_span, 4),
+        "t_interday_regularity": interday_reg,
+        "t_active_day_ratio":    active_day_r,
         "t_n_posts":             n_valid,
     }
 
@@ -245,19 +308,27 @@ def _compute_plan_b(posts: pd.DataFrame) -> dict:
 
     # Weekend ratio
     try:
-        weekday_vals = ts.dt.weekday
+        weekday_vals  = ts.dt.weekday
         weekend_ratio = float((weekday_vals >= 5).mean())
     except Exception:
         weekend_ratio = 0.0
 
+    # ── V1.1 — Régularité inter-journée ──────────────────────────────────
+    interday_regularity = round(
+        float(posts_per_day_std / (posts_per_day_mean + 1)), 4
+    )
+    active_day_ratio = round(activity_density, 4)   # alias explicite
+
     return {
-        "t_posts_per_day_mean": round(posts_per_day_mean, 4),
-        "t_posts_per_day_std":  round(posts_per_day_std, 4),
-        "t_n_active_days":      n_active_days,
-        "t_weekend_ratio":      round(weekend_ratio, 4),
-        "t_activity_density":   round(activity_density, 4),
-        "t_days_span":          days_span,
-        "t_n_posts":            n,
+        "t_posts_per_day_mean":  round(posts_per_day_mean, 4),
+        "t_posts_per_day_std":   round(posts_per_day_std, 4),
+        "t_n_active_days":       n_active_days,
+        "t_weekend_ratio":       round(weekend_ratio, 4),
+        "t_activity_density":    round(activity_density, 4),
+        "t_days_span":           days_span,
+        "t_interday_regularity": interday_regularity,
+        "t_active_day_ratio":    active_day_ratio,
+        "t_n_posts":             n,
     }
 
 

@@ -1,0 +1,92 @@
+{
+  "timestamp": "2026-03-27T23:14:02.241512",
+  "dataset": "data/_dryrun_train.csv",
+  "full_metrics": {
+    "auroc": 1.0,
+    "pr_auc": 1.0,
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fp": 0,
+    "fn": 0
+  },
+  "modules_benchmark": [
+    {
+      "module": "tabular",
+      "gain_auroc": 0.0,
+      "gain_precision": 0.0,
+      "delta_fp": 0,
+      "delta_fn": 0,
+      "runtime_cost_s": 0.451,
+      "memory_mb": 0.05,
+      "deps": "pandas, numpy",
+      "keep_default": true
+    },
+    {
+      "module": "temporal",
+      "gain_auroc": 0.0,
+      "gain_precision": 0.0,
+      "delta_fp": 0,
+      "delta_fn": 0,
+      "runtime_cost_s": 3.071,
+      "memory_mb": 0.05,
+      "deps": "pandas, numpy",
+      "keep_default": true
+    },
+    {
+      "module": "text_basic",
+      "gain_auroc": 0.0,
+      "gain_precision": 0.0,
+      "delta_fp": 0,
+      "delta_fn": 0,
+      "runtime_cost_s": 0.53,
+      "memory_mb": 0.03,
+      "deps": "pandas, re, string",
+      "keep_default": true
+    },
+    {
+      "module": "text_embeddings",
+      "gain_auroc": 0.0,
+      "gain_precision": 0.0,
+      "delta_fp": 0,
+      "delta_fn": 0,
+      "runtime_cost_s": 0.004,
+      "memory_mb": 0.0,
+      "deps": "sentence-transformers, torch, pandas",
+      "keep_default": false
+    },
+    {
+      "module": "structural",
+      "gain_auroc": 0.0,
+      "gain_precision": 0.0,
+      "delta_fp": 0,
+      "delta_fn": 0,
+      "runtime_cost_s": 0.945,
+      "memory_mb": 0.04,
+      "deps": "networkx, pandas, numpy",
+      "keep_default": true
+    },
+    {
+      "module": "relational",
+      "gain_auroc": 0.0,
+      "gain_precision": 0.0,
+      "delta_fp": 0,
+      "delta_fn": 0,
+      "runtime_cost_s": 0.033,
+      "memory_mb": 0.0,
+      "deps": "networkx, pandas, numpy",
+      "keep_default": false
+    },
+    {
+      "module": "coordination",
+      "gain_auroc": 0.0,
+      "gain_precision": 0.0,
+      "delta_fp": 0,
+      "delta_fn": 0,
+      "runtime_cost_s": 0.116,
+      "memory_mb": 0.02,
+      "deps": "pandas, numpy",
+      "keep_default": true
+    }
+  ]
+}

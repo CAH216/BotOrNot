@@ -1,0 +1,142 @@
+# configs/golden_baseline.yaml
+# ============================================================
+# GOLDEN BASELINE — Pipeline officiel de référence BotOrNot
+# ============================================================
+# Ce fichier définit le pipeline stable retenu comme baseline
+# de soumission. Toute modification expérimentale doit être
+# comparée contre cette config via scripts/benchmark.py.
+# ============================================================
+
+meta:
+  version: "1.1"
+  created: "2026-03-27"
+  description: >
+    Golden baseline V1.1 : tabular + temporal + text_basic + ensemble
+    via blending pondéré. Modèle principal LightGBM, calibration
+    isotonique, seuil conservateur auto-optimisé F1.
+
+# ── Données ──────────────────────────────────────────────────
+data:
+  train: "data/train.csv"
+  test:  "data/test.csv"
+  edges: null                 # chemin vers edges.csv si disponible
+
+# ── Reproductibilité ─────────────────────────────────────────
+seed: 42
+
+# ── Cross-validation ─────────────────────────────────────────
+cv:
+  strategy: "group_k_fold"    # group_k_fold | stratified_k_fold
+  n_folds: 5
+  group_col: null             # auto-détecté (account_id)
+  fallback_to_stratified: true
+
+# ── Features actives ─────────────────────────────────────────
+features:
+  tabular:         true       # toujours actif
+  temporal:        true       # si timestamps disponibles
+  text_basic:      true       # si colonne texte disponible
+  text_model:      false      # désactivé par défaut (coûteux)
+  text_embeddings: false      # désactivé (GPU requis)
+  structural:      true       # si colonnes source/client présentes
+  relational:      false      # si edges.csv fourni
+
+# ── Modèle principal ─────────────────────────────────────────
+model:
+  name: "lgbm"                # lgbm | catboost | lr
+  hyperparameters:
+    n_estimators:       500
+    learning_rate:      0.05
+    num_leaves:         63
+    max_depth:          -1
+    min_child_samples:  20
+    subsample:          0.8
+    colsample_bytree:   0.8
+    reg_alpha:          0.1
+    reg_lambda:         1.0
+    class_weight:       "balanced"
+    n_jobs:             -1
+    verbose:            -1
+
+# ── Modèle de fallback ───────────────────────────────────────
+fallback_model:
+  name: "catboost"
+  hyperparameters:
+    iterations:         500
+    learning_rate:      0.05
+    depth:              6
+    l2_leaf_reg:        3
+    auto_class_weights: "Balanced"
+    verbose:            0
+
+# ── Calibration ──────────────────────────────────────────────
+calibration:
+  enabled: true
+  method: "isotonic"          # isotonic | sigmoid
+  cv_folds: 3                 # folds pour calibration
+
+# ── Ensemble ─────────────────────────────────────────────────
+ensemble:
+  mode: "weighted_blend"      # weighted_blend | simple_mean | vote
+  weights:
+    tabular:    0.35
+    temporal:   0.35
+    text_basic: 0.30
+  normalize_weights: true     # renormalise si modules manquants
+
+# ── Seuil de décision ────────────────────────────────────────
+threshold:
+  mode: "conservative"        # conservative | f1_optimal | fixed
+  # conservative = max(f1_optimal, 0.50)
+  # f1_optimal   = argmax(F1) sur les OOF probas
+  # fixed        = utilise la valeur ci-dessous
+  fixed_value: 0.50
+  search_range: [0.25, 0.80]
+  search_step:  0.01
+
+# ── Anti-FP (logique de prudence) ────────────────────────────
+anti_fp:
+  enabled: true
+  min_modules_for_bot: 2      # au moins 2 modules doivent signaler bot
+  unilateral_penalty: 0.10    # réduction proba si seul 1 module signale
+  power_user_protection:
+    enabled: true
+    min_followers: 5000       # si followers > seuil → prudence accrue
+    follower_penalty: 0.05    # réduction proba supplémentaire
+
+# ── Export ───────────────────────────────────────────────────
+output:
+  dir: "artifacts/submissions"
+  prefix: "golden_v1.1"
+  formats:
+    - csv
+    - json
+
+# ── Logging ──────────────────────────────────────────────────
+logging:
+  level: "INFO"
+  save_oof: true              # sauvegarder les probas OOF
+  save_feature_importances: true
+
+# ── Consensus V2 ─────────────────────────────────────────────
+# RULES.md §2 : désactivé par défaut, activer seulement après
+# validation par scripts/consensus_v2_compare.py
+# (delta_AUROC >= 0.01 ET sigma <= 0.02 ET FP non-régressif)
+consensus_v2:
+  enabled: false              # ← NE PAS CHANGER SANS BENCHMARK
+  # Poids des modules (identiques V1 par défaut)
+  weights:
+    tabular:    0.35
+    temporal:   0.30
+    text_basic: 0.15
+    text_model: 0.10
+    structural: 0.10
+  # Paramètres du score composite
+  bot_threshold:          0.50
+  agreement_weight:       0.25   # poids n_agree
+  confidence_weight:      0.25   # poids mean_confidence
+  spread_penalty_weight:  0.20   # poids anti-conflit
+  spread_alarm_threshold: 0.40   # écart max toléré
+  structural_boost:       0.05   # bonus signal structurel fort
+  structural_threshold:   0.65   # seuil signal structurel "fort"
+  v2_alpha:               0.50   # interpolation V1 ↔ consensus_score

@@ -2,7 +2,7 @@
 """
 src/features/tabular.py
 ------------------------
-Extracteur de features tabulaires V1 — couche principale du pipeline.
+Extracteur de features tabulaires V1.1 — couche principale du pipeline.
 
 Ce module extrait les features numériques et catégorielles à partir de :
     - accounts_df : profil du compte
@@ -170,6 +170,48 @@ def _account_features(row: pd.Series, now: pd.Timestamp) -> dict:
     f[f"{_PREFIX}has_default_image"] = (
         int(bool(default_img)) if pd.notna(default_img) else np.nan
     )
+
+    # ── V1.1 — Log transforms ─────────────────────────────────────────────
+    # Stabilisent la distribution pour les modèles de type arbre et LR.
+    f[f"{_PREFIX}followers_log"]  = float(np.log1p(max(followers, 0))) if not np.isnan(followers) else np.nan
+    f[f"{_PREFIX}following_log"]  = float(np.log1p(max(following, 0))) if not np.isnan(following) else np.nan
+    f[f"{_PREFIX}total_posts_log"]= float(np.log1p(max(total_posts, 0))) if not np.isnan(total_posts) else np.nan
+    if not np.isnan(age_days):
+        f[f"{_PREFIX}age_days_log"] = float(np.log1p(max(age_days, 0)))
+    else:
+        f[f"{_PREFIX}age_days_log"] = np.nan
+
+    # ── V1.1 — Flags extrêmes ────────────────────────────────────────────
+    # Indicateurs booléens pour détecter des valeurs anormalement hautes.
+    if not np.isnan(followers):
+        f[f"{_PREFIX}followers_extreme"] = int(followers > 100_000)
+        f[f"{_PREFIX}followers_zero"]    = int(followers == 0)
+    else:
+        f[f"{_PREFIX}followers_extreme"] = np.nan
+        f[f"{_PREFIX}followers_zero"]    = np.nan
+
+    if not np.isnan(following):
+        f[f"{_PREFIX}following_extreme"] = int(following > 5_000)
+    else:
+        f[f"{_PREFIX}following_extreme"] = np.nan
+
+    if not np.isnan(total_posts):
+        f[f"{_PREFIX}statuses_extreme"] = int(total_posts > 100_000)
+    else:
+        f[f"{_PREFIX}statuses_extreme"] = np.nan
+
+    # ── V1.1 — Productivité par follower ─────────────────────────────────
+    # Bots : beaucoup de posts, peu de followers.
+    if not (np.isnan(total_posts) or np.isnan(followers)):
+        f[f"{_PREFIX}posts_per_follower"] = round(
+            _safe_div(total_posts, followers + 1), 4
+        )
+        f[f"{_PREFIX}posts_per_follower_log"] = float(
+            np.log1p(_safe_div(total_posts, followers + 1))
+        )
+    else:
+        f[f"{_PREFIX}posts_per_follower"]     = np.nan
+        f[f"{_PREFIX}posts_per_follower_log"] = np.nan
 
     return f
 

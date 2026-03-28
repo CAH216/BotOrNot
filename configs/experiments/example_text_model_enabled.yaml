@@ -1,0 +1,20 @@
+# configs/experiments/example_text_model_enabled.yaml
+# ============================================================
+# EXEMPLE D'EXPERIENCE — Activer text_model (TF-IDF)
+# ============================================================
+# Usage :
+#   python scripts/experiment_runner.py \
+#       --train data/train.csv \
+#       --experiment configs/experiments/example_text_model_enabled.yaml
+# ============================================================
+
+meta:
+  name: "text_model_tfidf_enabled"
+  description: "Activer le module text_model (TF-IDF SVD) desactive par defaut"
+  hypothesis: >
+    Le module TF-IDF pourrait apporter +0.02 a +0.05 AUROC
+    sur des datasets avec texte riche et varie (> 500 comptes).
+
+# Overlay minimal : seul text_model passe a true
+features:
+  text_model: true

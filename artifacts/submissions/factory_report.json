@@ -1,0 +1,50 @@
+{
+  "generated_at": "2026-03-27T23:38:15.949075",
+  "elapsed_seconds": 3.3,
+  "model": "lgbm",
+  "oof_auroc": 1.0,
+  "profiles": [
+    {
+      "profile": "conservative",
+      "auroc": 1.0,
+      "pr_auc": 1.0,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "fp": 0,
+      "fn": 0,
+      "tp": 150,
+      "tn": 90,
+      "fpr": 0.0,
+      "threshold": 0.6
+    },
+    {
+      "profile": "balanced",
+      "auroc": 1.0,
+      "pr_auc": 1.0,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "fp": 0,
+      "fn": 0,
+      "tp": 150,
+      "tn": 90,
+      "fpr": 0.0,
+      "threshold": 0.45
+    },
+    {
+      "profile": "aggressive",
+      "auroc": 1.0,
+      "pr_auc": 1.0,
+      "f1": 1.0,
+      "precision": 1.0,
+      "recall": 1.0,
+      "fp": 0,
+      "fn": 0,
+      "tp": 150,
+      "tn": 90,
+      "fpr": 0.0,
+      "threshold": 0.38
+    }
+  ]
+}

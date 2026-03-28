@@ -1,0 +1,8 @@
+module,gain_auroc,gain_precision,delta_fp,delta_fn,runtime_cost_s,memory_mb,deps,keep_default
+tabular,0.0,0.0,0,0,0.451,0.05,"pandas, numpy",True
+temporal,0.0,0.0,0,0,3.071,0.05,"pandas, numpy",True
+text_basic,0.0,0.0,0,0,0.53,0.03,"pandas, re, string",True
+text_embeddings,0.0,0.0,0,0,0.004,0.0,"sentence-transformers, torch, pandas",False
+structural,0.0,0.0,0,0,0.945,0.04,"networkx, pandas, numpy",True
+relational,0.0,0.0,0,0,0.033,0.0,"networkx, pandas, numpy",False
+coordination,0.0,0.0,0,0,0.116,0.02,"pandas, numpy",True

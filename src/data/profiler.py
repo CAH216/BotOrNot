@@ -317,6 +317,12 @@ def _recommend_modules(profile: DataProfile) -> tuple[list, list, list]:
     else:
         dis.append("structural")
 
+    # Coordination (V1.5)
+    if profile.has_timestamps and profile.has_post_ids and profile.n_posts > 0:
+        rec.append("coordination")
+    else:
+        dis.append("coordination")
+
     # Relationnel
     if profile.has_edges:
         rec.append("relational")

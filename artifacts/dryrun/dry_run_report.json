@@ -1,0 +1,73 @@
+{
+  "generated_at": "2026-03-27T21:43:58.432200",
+  "train": "data/_dryrun_train.csv",
+  "test": "data/_dryrun_test.csv",
+  "elapsed_seconds": 11.0,
+  "elapsed_minutes": 0.18,
+  "steps": [
+    {
+      "step": "inspect_dataset",
+      "seconds": 1.75,
+      "ok": false,
+      "error": "\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeErro"
+    },
+    {
+      "step": "run_cutdown [balanced, 3-fold]",
+      "seconds": 3.15,
+      "ok": false,
+      "error": "Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeE"
+    },
+    {
+      "step": "run_cutdown [conservative, 3-fold]",
+      "seconds": 3.16,
+      "ok": false,
+      "error": "Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeE"
+    },
+    {
+      "step": "submission_factory [3 profils, 3-fold]",
+      "seconds": 2.92,
+      "ok": false,
+      "error": "Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeE"
+    }
+  ],
+  "files_generated": [
+    {
+      "file": "cutdown_balanced.csv",
+      "exists": false,
+      "bytes": 0
+    },
+    {
+      "file": "cutdown_conservative.csv",
+      "exists": false,
+      "bytes": 0
+    },
+    {
+      "file": "submission_conservative.csv",
+      "exists": false,
+      "bytes": 0
+    },
+    {
+      "file": "submission_balanced.csv",
+      "exists": false,
+      "bytes": 0
+    },
+    {
+      "file": "submission_aggressive.csv",
+      "exists": false,
+      "bytes": 0
+    },
+    {
+      "file": "factory_report.json",
+      "exists": false,
+      "bytes": 0
+    }
+  ],
+  "friction_points": [
+    "ERREUR - inspect_dataset: \\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeEncodeErro",
+    "ERREUR - run_cutdown [balanced, 3-fold]: Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeE",
+    "ERREUR - run_cutdown [conservative, 3-fold]: Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeE",
+    "ERREUR - submission_factory [3 profils, 3-fold]: Python311\\Lib\\encodings\\cp1252.py\", line 19, in encode\n    return codecs.charmap_encode(input,self.errors,encoding_table)[0]\n           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^\nUnicodeE"
+  ],
+  "n_steps_ok": 0,
+  "n_steps_fail": 4
+}

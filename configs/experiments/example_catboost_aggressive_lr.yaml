@@ -1,0 +1,20 @@
+# configs/experiments/example_catboost_aggressive_lr.yaml
+# ============================================================
+# EXEMPLE D'EXPERIENCE — CatBoost avec learning rate plus fort
+# ============================================================
+
+meta:
+  name: "catboost_lr_01"
+  description: "CatBoost avec learning_rate=0.1 au lieu de 0.05"
+  hypothesis: >
+    Un learning rate plus eleve peut accelerer la convergence
+    sans perte de generalisation si le dataset est suffisamment grand.
+
+model:
+  name: "catboost"
+  hyperparameters:
+    iterations:    400
+    learning_rate: 0.10
+    depth:         6
+    l2_leaf_reg:   3
+    verbose:       0

@@ -1,0 +1,130 @@
+# configs/submission_profiles.yaml
+# ============================================================
+# PROFILS DE SOUMISSION — BotOrNot
+# ============================================================
+# Trois profils prêts à l'emploi pour ajuster le comportement
+# du pipeline selon les objectifs de la compétition.
+#
+# Usage dans submission_factory.py :
+#   --profile conservative | balanced | aggressive
+# ============================================================
+
+# ─────────────────────────────────────────────────────────────
+# PROFIL 1 — CONSERVATIVE
+# Priorité : minimiser les faux positifs (humains mal classés).
+# Usage : quand le score est fortement pénalisé par les FP,
+#         ou quand le dataset contient des power-users.
+# ─────────────────────────────────────────────────────────────
+conservative:
+  description: >
+    Maximise la précision. Classe un compte comme bot seulement
+    quand le signal est fort et convergent. Préférable quand
+    les FP sont très coûteux.
+
+  threshold:
+    mode: "fixed"
+    value: 0.60               # seuil élevé = moins de bots détectés
+
+  anti_fp:
+    enabled: true
+    min_modules_for_bot: 2   # nécessite accord d'au moins 2 modules
+    unilateral_penalty: 0.15 # forte pénalité si seul 1 module signale
+    power_user_protection:
+      enabled: true
+      min_followers: 3000
+      follower_penalty: 0.08
+
+  ensemble:
+    mode: "weighted_blend"
+    weights:
+      tabular:    0.40
+      temporal:   0.40
+      text_basic: 0.20
+
+  calibration:
+    enabled: true
+    method: "isotonic"
+
+  expected_trade_off:
+    precision: "high"         # ≥ 0.85 attendu
+    recall: "medium-low"      # 0.55–0.70 attendu
+    fp_risk: "low"
+
+# ─────────────────────────────────────────────────────────────
+# PROFIL 2 — BALANCED
+# Priorité : optimiser le F1-score global.
+# Usage : profil par défaut, bon équilibre P/R, pipeline stable.
+# ─────────────────────────────────────────────────────────────
+balanced:
+  description: >
+    Optimise le F1-score. Seuil auto-ajusté sur les probas OOF.
+    Profil recommandé pour une première soumission compétitive.
+
+  threshold:
+    mode: "f1_optimal"        # seuil cherché par argmax(F1) sur OOF
+    min_value: 0.45           # garde-fou minimum
+    max_value: 0.65           # garde-fou maximum
+
+  anti_fp:
+    enabled: true
+    min_modules_for_bot: 1   # 1 module suffit si signal fort
+    unilateral_penalty: 0.08
+    power_user_protection:
+      enabled: true
+      min_followers: 10000
+      follower_penalty: 0.04
+
+  ensemble:
+    mode: "weighted_blend"
+    weights:
+      tabular:    0.35
+      temporal:   0.35
+      text_basic: 0.30
+
+  calibration:
+    enabled: true
+    method: "isotonic"
+
+  expected_trade_off:
+    precision: "medium"       # ≥ 0.75 attendu
+    recall: "medium"          # ≥ 0.75 attendu
+    fp_risk: "medium"
+
+# ─────────────────────────────────────────────────────────────
+# PROFIL 3 — AGGRESSIVE
+# Priorité : maximiser le recall (détecter le plus de bots).
+# Usage : si le score pénalise les faux négatifs (bots manqués),
+#         ou lors d'une phase de nettoyage.
+# ─────────────────────────────────────────────────────────────
+aggressive:
+  description: >
+    Maximise le recall. Classe un compte comme bot dès que le
+    signal dépasse un seuil bas. Plus de faux positifs acceptés
+    en échange de moins de bots manqués.
+
+  threshold:
+    mode: "fixed"
+    value: 0.38               # seuil bas = plus de bots détectés
+
+  anti_fp:
+    enabled: false            # désactivé — priorité au recall
+    min_modules_for_bot: 1
+    unilateral_penalty: 0.00
+    power_user_protection:
+      enabled: false
+
+  ensemble:
+    mode: "weighted_blend"
+    weights:
+      tabular:    0.30
+      temporal:   0.40        # temporal fort pour les bots bursts
+      text_basic: 0.30
+
+  calibration:
+    enabled: true
+    method: "sigmoid"         # sigmoid plus agressive que isotonique
+
+  expected_trade_off:
+    precision: "low-medium"   # 0.60–0.75 attendu
+    recall: "high"            # ≥ 0.85 attendu
+    fp_risk: "high"

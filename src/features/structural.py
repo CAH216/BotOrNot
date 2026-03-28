@@ -2,26 +2,32 @@
 """
 src/features/structural.py
 ---------------------------
-Extracteur de features structurelles — signaux techniques non-NLP.
+Extracteur de features structurelles — V1 stable + V1.1 expérimental.
 
-Principe :
-    Ce module est OPPORTUNISTE. Si les colonnes n'existent pas dans le
-    dataset du jour J, il retourne un DataFrame vide proprement sans planter.
-    C'est le profiler qui décide si ce module doit être activé.
+V1 (stable, toujours actif) :
+    ID patterns, source/client, batch creation, format anomalies.
 
-Signaux exploités :
-    ID patterns     — séquentialité, préfixe commun, densité de chiffres,
-                      IDs consécutifs (création en batch)
-    Source / client — diversité des clients API, source unique (bot API)
-    Batch creation  — comptes créés dans la même fenêtre temporelle
-    Format anomalies— longueur d'ID anormale, format non-standard,
-                      champs obligatoires vides
+V1.1 (derrière 4 flags features.yaml — RULES.md §2) :
+    F1 source_v11  — répétition source / homogénéité extrême
+    F2 batch_v11   — batch heure/jour, densité inter-comptes
+    F3 profile_v11 — cohérence username ↔ bio ↔ id
+    F4 template_v11— flags "profile template-like"
 
 Usage :
     from src.features.structural import extract_structural_features
 
+    # V1 seule (comportement identique à avant)
     feat_df = extract_structural_features(accounts_df, posts_df)
-    # Retourne DataFrame vide si les colonnes sont absentes
+
+    # V1 + familles expérimentales (nécessite validation benchmark)
+    feat_df = extract_structural_features(accounts_df, posts_df, cfg={
+        "structural": {
+            "source_v11_enabled":   True,
+            "batch_v11_enabled":    True,
+            "profile_v11_enabled":  True,
+            "template_v11_enabled": True,
+        }
+    })
 """
 
 from __future__ import annotations
@@ -71,6 +77,42 @@ STRUCTURAL_COLS = [
     "str_missing_bio",             # bio absente
     "str_missing_location",        # localisation absente
 ]
+
+# ---------------------------------------------------------------------------
+# V1.1 — Colonnes expérimentales (derrière flags features.yaml)
+# Désactivées par défaut — RULES.md §2 + §4
+# ---------------------------------------------------------------------------
+
+STRUCTURAL_COLS_V11 = {
+    # F1 : source / client répétitif
+    "source_v11": [
+        "str_top_source_ratio",      # ratio du client le plus fréquent
+        "str_source_repeat_score",   # (n_top / n_total) — biais source
+        "str_source_homogeneity",    # 1 − entropie normalisée
+        "str_source_is_extreme",     # 1 si top_source_ratio ≥ 0.95
+    ],
+    # F2 : batch creation fin (heure / jour / densité)
+    "batch_v11": [
+        "str_batch_same_hour",       # comptes créés dans la même heure
+        "str_batch_same_day",        # comptes créés le même jour
+        "str_batch_density",         # nb comptes dans la même heure / total
+    ],
+    # F3 : cohérence username / bio / id
+    "profile_v11": [
+        "str_username_bio_len_ratio",    # len(username) / len(bio) (valeur 0 si bio vide)
+        "str_username_numeric_suffix",   # username se termine par chiffre(s)
+        "str_id_username_len_ratio",     # len(id_str) / len(username)
+        "str_profile_completeness",      # score 0-1 : % de champs non-vides
+    ],
+    # F4 : profil "template-like"
+    "template_v11": [
+        "str_bio_is_template",       # bio générique / très courte (≤ 10 car)
+        "str_username_underscores",  # nb de underscores dans username
+        "str_username_len",          # longueur du username
+        "str_username_digits_ratio", # ratio chiffres dans username
+        "str_profile_template_score",# score composite 0-4
+    ],
+}
 
 
 def _null_row(n: int = 1) -> dict:
@@ -193,28 +235,159 @@ def _profile_anomaly_features(row: pd.Series) -> dict:
 
 
 # ---------------------------------------------------------------------------
+# V1.1 — Fonctions de features expérimentales (derrière flags)
+# ---------------------------------------------------------------------------
+
+# F1 — Répétition source / homogénéité extrême
+def _source_features_v11(group: pd.DataFrame) -> dict:
+    """V1.1 F1 : ratio et homogénéité de la source dominante."""
+    if PostCols.SOURCE not in group.columns:
+        return {k: np.nan for k in STRUCTURAL_COLS_V11["source_v11"]}
+    sources = group[PostCols.SOURCE].dropna().astype(str)
+    if sources.empty:
+        return {
+            "str_top_source_ratio":    1.0,
+            "str_source_repeat_score": 1.0,
+            "str_source_homogeneity":  1.0,
+            "str_source_is_extreme":   1,
+        }
+    top_ratio = float(sources.value_counts(normalize=True).iloc[0])
+    n_unique  = int(sources.nunique())
+    # Homogénéité = 1 − entropie normalisée
+    counts = sources.value_counts(normalize=True)
+    h      = float(-(counts * np.log2(counts + 1e-12)).sum())
+    max_h  = np.log2(n_unique) if n_unique > 1 else 1.0
+    homogeneity = round(1.0 - (h / max_h if max_h > 0 else 0.0), 4)
+    return {
+        "str_top_source_ratio":    round(top_ratio, 4),
+        "str_source_repeat_score": round(top_ratio, 4),  # alias sémantique
+        "str_source_homogeneity":  homogeneity,
+        "str_source_is_extreme":   int(top_ratio >= 0.95),
+    }
+
+
+# F2 — Batch creation fine (heure / jour / densité)
+def _batch_features_v11_build_maps(acc_index: pd.DataFrame) -> tuple:
+    """
+    Pré-calcule les maps batch_same_hour, batch_same_day, batch_density.
+    Retourne (hour_map, day_map, density_map) dict {aid: value}.
+    """
+    hour_map: dict    = {}
+    day_map: dict     = {}
+    density_map: dict = {}
+    if acc_index.empty or AccountCols.CREATED_AT not in acc_index.columns:
+        return hour_map, day_map, density_map
+    try:
+        created    = acc_index[AccountCols.CREATED_AT].dropna()
+        ts         = pd.to_datetime(created, utc=True, errors="coerce").dropna()
+        hour_str   = ts.dt.strftime("%Y-%m-%dT%H")
+        day_str    = ts.dt.strftime("%Y-%m-%d")
+        hour_counts = hour_str.value_counts()
+        day_counts  = day_str.value_counts()
+        n_total     = len(ts)
+        for aid, h_str in hour_str.items():
+            c = hour_counts.get(h_str, 1)
+            hour_map[str(aid)]    = int(c >= 2)
+            density_map[str(aid)] = round(c / max(n_total, 1), 4)
+        for aid, d_str in day_str.items():
+            day_map[str(aid)] = int(day_counts.get(d_str, 1) >= 2)
+    except Exception as exc:
+        logger.debug("[structural] batch_v11 erreur : %s", exc)
+    return hour_map, day_map, density_map
+
+
+# F3 — Cohérence username / bio / id
+def _profile_coherence_features(row: pd.Series, aid: str) -> dict:
+    """V1.1 F3 : ratios et flags de cohérence inter-champs du profil."""
+    uname = str(row.get(AccountCols.SCREEN_NAME, "")) if pd.notna(
+        row.get(AccountCols.SCREEN_NAME)) else ""
+    bio   = str(row.get(AccountCols.BIO, "")) if pd.notna(row.get(AccountCols.BIO)) else ""
+    id_s  = str(aid)
+    # Ratio longueur username / bio
+    if len(bio) > 0:
+        u_b_ratio = round(len(uname) / len(bio), 4)
+    else:
+        u_b_ratio = 0.0
+    # Username se termine par chiffre
+    num_suffix = int(len(uname) > 0 and uname[-1].isdigit())
+    # Ratio longueur id / username
+    if len(uname) > 0:
+        id_u_ratio = round(len(id_s) / len(uname), 4)
+    else:
+        id_u_ratio = 0.0
+    # Complétude du profil : bio + location + name
+    has_bio  = int(len(bio.strip()) > 5)
+    has_loc  = int(len(str(row.get(AccountCols.LOCATION, "") or "").strip()) > 0)
+    has_name = int(len(str(row.get(AccountCols.NAME, "") or "").strip()) > 0)
+    completeness = round((has_bio + has_loc + has_name) / 3.0, 4)
+    return {
+        "str_username_bio_len_ratio":  u_b_ratio,
+        "str_username_numeric_suffix": num_suffix,
+        "str_id_username_len_ratio":   id_u_ratio,
+        "str_profile_completeness":    completeness,
+    }
+
+
+# F4 — Profil template-like
+def _template_features(row: pd.Series) -> dict:
+    """V1.1 F4 : signaux de profil généré / template."""
+    uname = str(row.get(AccountCols.SCREEN_NAME, "")) if pd.notna(
+        row.get(AccountCols.SCREEN_NAME)) else ""
+    bio   = str(row.get(AccountCols.BIO, "")) if pd.notna(row.get(AccountCols.BIO)) else ""
+    # Bio très courte ou vide = template
+    bio_is_template = int(len(bio.strip()) <= 10)
+    # Username underscores
+    n_underscores   = uname.count("_")
+    # Longueur username
+    uname_len       = len(uname)
+    # Ratio chiffres dans username
+    n_dig = sum(c.isdigit() for c in uname)
+    dig_ratio = round(n_dig / max(len(uname), 1), 4)
+    # Score composite (0-4)
+    score = (
+        bio_is_template
+        + int(n_underscores >= 2)
+        + int(uname_len > 12)
+        + int(dig_ratio >= 0.25)
+    )
+    return {
+        "str_bio_is_template":        bio_is_template,
+        "str_username_underscores":   n_underscores,
+        "str_username_len":           uname_len,
+        "str_username_digits_ratio":  dig_ratio,
+        "str_profile_template_score": score,
+    }
+
+
+# ---------------------------------------------------------------------------
 # Point d'entrée principal
 # ---------------------------------------------------------------------------
 
 def extract_structural_features(
     accounts_df: Optional[pd.DataFrame] = None,
     posts_df:    Optional[pd.DataFrame] = None,
+    cfg:         Optional[dict]         = None,
 ) -> pd.DataFrame:
     """
     Extrait les features structurelles pour chaque compte.
 
     Le module est opportuniste :
-        - Si aucune colonne utile n'est trouvée → retourne DataFrame vide propre
-        - Si seulement certaines colonnes existent → calcule ce qui est possible
+        - Si aucune colonne utile n'est trouvee -> retourne DataFrame vide propre
+        - Si seulement certaines colonnes existent -> calcule ce qui est possible
         - Ne plante jamais
+
+    V1.1 (features experimentales) :
+        Activer via cfg={"structural": {"source_v11_enabled": True, ...}}
+        Desactivees par defaut (RULES.md §2).
 
     Args:
         accounts_df : DataFrame de comptes (colonnes canoniques)
         posts_df    : DataFrame de posts
+        cfg         : Dict de configuration (issu de features.yaml).  None = V1 pure.
 
     Returns:
         DataFrame avec account_id + features structurelles.
-        Une ligne par compte. DataFrame vide (0 lignes) si rien n'est dispo.
+        Une ligne par compte. DataFrame vide si rien n'est dispo.
     """
     id_col = AccountCols.ID
 
@@ -283,6 +456,20 @@ def extract_structural_features(
     else:
         global_batch_score = np.nan
 
+    # ── V1.1 flags ──────────────────────────────────────────────────────────
+    str_cfg = (cfg or {}).get("structural", {})
+    use_source_v11   = bool(str_cfg.get("source_v11_enabled",   False))
+    use_batch_v11    = bool(str_cfg.get("batch_v11_enabled",    False))
+    use_profile_v11  = bool(str_cfg.get("profile_v11_enabled",  False))
+    use_template_v11 = bool(str_cfg.get("template_v11_enabled", False))
+
+    # Pre-calcul V1.1 batch heure/jour (global, fait une seule fois)
+    hour_map: dict  = {}
+    day_map: dict   = {}
+    density_map: dict = {}
+    if use_batch_v11 and can_compute_batch:
+        hour_map, day_map, density_map = _batch_features_v11_build_maps(acc_index)
+
     # Calcul par compte
     rows = []
     for aid in known_ids:
@@ -306,7 +493,7 @@ def extract_structural_features(
                         "str_missing_location", "str_username_all_digits", "str_username_no_vowels"]:
                 feat[col] = np.nan
 
-        # Source features
+        # Source features (V1)
         if aid in posts_grouped:
             feat.update(_source_features(posts_grouped[aid]))
         else:
@@ -314,9 +501,53 @@ def extract_structural_features(
                         "str_source_has_api", "str_source_entropy"]:
                 feat[col] = np.nan
 
-        # Batch
+        # Batch (V1)
         feat["str_batch_score"]        = global_batch_score
         feat["str_created_same_minute"] = float(batch_minute_map.get(aid, np.nan))
+
+        # ── V1.1 features (derriere flags) ──────────────────────────────────
+        # F1 : SOURCE V1.1
+        if use_source_v11:
+            try:
+                if aid in posts_grouped:
+                    feat.update(_source_features_v11(posts_grouped[aid]))
+                else:
+                    feat.update({k: np.nan for k in STRUCTURAL_COLS_V11["source_v11"]})
+            except Exception as exc:
+                logger.debug("[structural] source_v11 error '%s': %s", aid, exc)
+                feat.update({k: np.nan for k in STRUCTURAL_COLS_V11["source_v11"]})
+
+        # F2 : BATCH V1.1
+        if use_batch_v11:
+            feat["str_batch_same_hour"] = float(hour_map.get(aid, np.nan))
+            feat["str_batch_same_day"]  = float(day_map.get(aid, np.nan))
+            feat["str_batch_density"]   = float(density_map.get(aid, np.nan))
+
+        # F3 : PROFILE COHERENCE V1.1
+        if use_profile_v11 and can_compute_profile and aid in acc_index.index:
+            try:
+                acc_row = acc_index.loc[aid]
+                if isinstance(acc_row, pd.DataFrame):
+                    acc_row = acc_row.iloc[0]
+                feat.update(_profile_coherence_features(acc_row, aid))
+            except Exception as exc:
+                logger.debug("[structural] profile_v11 error '%s': %s", aid, exc)
+                feat.update({k: np.nan for k in STRUCTURAL_COLS_V11["profile_v11"]})
+        elif use_profile_v11:
+            feat.update({k: np.nan for k in STRUCTURAL_COLS_V11["profile_v11"]})
+
+        # F4 : TEMPLATE V1.1
+        if use_template_v11 and can_compute_profile and aid in acc_index.index:
+            try:
+                acc_row = acc_index.loc[aid]
+                if isinstance(acc_row, pd.DataFrame):
+                    acc_row = acc_row.iloc[0]
+                feat.update(_template_features(acc_row))
+            except Exception as exc:
+                logger.debug("[structural] template_v11 error '%s': %s", aid, exc)
+                feat.update({k: np.nan for k in STRUCTURAL_COLS_V11["template_v11"]})
+        elif use_template_v11:
+            feat.update({k: np.nan for k in STRUCTURAL_COLS_V11["template_v11"]})
 
         rows.append(feat)
 

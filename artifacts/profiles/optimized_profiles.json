@@ -1,0 +1,53 @@
+[
+  {
+    "profil": "conservative",
+    "threshold": 0.4,
+    "blend_method": "lr_only",
+    "anti_fp_rules": "min_1mod_pen0.08_pu0.1",
+    "expected_behavior": "Max Prec (Prec=1.000, F1=1.000, Rec=1.000, FP=0)",
+    "min_modules_for_bot": 1,
+    "unilateral_penalty": 0.08,
+    "pu_min_followers": 3000,
+    "pu_follower_penalty": 0.1,
+    "conflict_rules": true,
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fp": 0,
+    "fn": 0
+  },
+  {
+    "profil": "balanced",
+    "threshold": 0.4,
+    "blend_method": "lr_only",
+    "anti_fp_rules": "min_1mod_pen0.08_pu0.1",
+    "expected_behavior": "Max F1 (Prec=1.000, F1=1.000, Rec=1.000, FP=0)",
+    "min_modules_for_bot": 1,
+    "unilateral_penalty": 0.08,
+    "pu_min_followers": 3000,
+    "pu_follower_penalty": 0.1,
+    "conflict_rules": true,
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fp": 0,
+    "fn": 0
+  },
+  {
+    "profil": "aggressive",
+    "threshold": 0.4,
+    "blend_method": "lr_only",
+    "anti_fp_rules": "min_1mod_pen0.08_pu0.1",
+    "expected_behavior": "Max Recall (Prec=1.000, F1=1.000, Rec=1.000, FP=0)",
+    "min_modules_for_bot": 1,
+    "unilateral_penalty": 0.08,
+    "pu_min_followers": 3000,
+    "pu_follower_penalty": 0.1,
+    "conflict_rules": true,
+    "f1": 1.0,
+    "precision": 1.0,
+    "recall": 1.0,
+    "fp": 0,
+    "fn": 0
+  }
+]

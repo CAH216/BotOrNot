@@ -1,0 +1,28 @@
+# configs/experiments/example_xgb_model.yaml
+# ============================================================
+# EXEMPLE D'EXPERIENCE — Tester XGBoost à la place de LightGBM
+# ============================================================
+# Usage :
+#   python scripts/experiment_runner.py \
+#       --train data/train.csv \
+#       --experiment configs/experiments/example_xgb_model.yaml
+# ============================================================
+
+meta:
+  name: "xgb_vs_lgbm"
+  description: "Remplacer LightGBM par XGBoost comme modele principal"
+  hypothesis: >
+    XGBoost avec max_depth=6 pourrait generaliser mieux
+    sur des datasets de petite taille.
+
+# Seulement les champs differents de golden_baseline.yaml
+model:
+  name: "xgboost"
+  hyperparameters:
+    n_estimators:   500
+    learning_rate:  0.05
+    max_depth:      6
+    subsample:      0.8
+    colsample_bytree: 0.8
+    reg_alpha:      0.1
+    reg_lambda:     1.0

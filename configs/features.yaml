@@ -42,7 +42,22 @@ text_basic:
 # STRUCTURAL
 # ─────────────────────────────────────────────
 structural:
-  batch_window_seconds: 60   # Fenêtre de création en batch
+  batch_window_seconds: 60
+  # V1.1 — features experimentales (RULES.md §2 : disabled par défaut)
+  # Activer uniquement si benchmark structural_v11_benchmark.py démontre :
+  #   delta_AUROC >= 0.01, sigma <= 0.02, FP non-régressif
+  source_v11_enabled:   false   # F1 : répétition source / homogénéité extrême
+  batch_v11_enabled:    false   # F2 : batch heure/jour + densité inter-comptes
+  profile_v11_enabled:  false   # F3 : cohérence username/bio/id + profile_completeness
+  template_v11_enabled: false   # F4 : flags profil "template-like" / généré
+
+# ─────────────────────────────────────────────
+# COORDINATION (V1.5)
+# ─────────────────────────────────────────────
+coordination:
+  enabled: false             # Règles : prouver le gain avant activation
+  time_window_minutes: 60    # Fenêtre temporelle d'analyse
+  min_users_per_bin: 2       # Ne regarde que les fenêtres avec >= 2 bots/humains actifs
 
 # ─────────────────────────────────────────────
 # RELATIONAL (graphe)

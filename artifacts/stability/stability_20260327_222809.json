@@ -1,0 +1,80 @@
+{
+  "generated_at": "2026-03-27T22:28:09.398959",
+  "elapsed_seconds": 4.6,
+  "train": "data/_dryrun_train.csv",
+  "baseline": "configs/golden_baseline.yaml",
+  "n_seeds": 3,
+  "seeds": [
+    42,
+    59,
+    76
+  ],
+  "cv_folds": 3,
+  "classification_thresholds": {
+    "min_auroc_gain_for_gain": 0.01,
+    "max_sigma_for_stable": 0.02,
+    "max_fp_increase_for_stable": 0
+  },
+  "results": [
+    {
+      "name": "golden_baseline",
+      "file": "configs/golden_baseline.yaml",
+      "n_runs": 3,
+      "agg": {
+        "auroc": {
+          "mean": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "pr_auc": {
+          "mean": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "f1": {
+          "mean": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "precision": {
+          "mean": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "recall": {
+          "mean": 1.0,
+          "std": 0.0,
+          "min": 1.0,
+          "max": 1.0,
+          "median": 1.0
+        },
+        "fp": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "median": 0.0
+        },
+        "fn": {
+          "mean": 0.0,
+          "std": 0.0,
+          "min": 0.0,
+          "max": 0.0,
+          "median": 0.0
+        }
+      },
+      "classification": "reference",
+      "reasons": [
+        "Variante de reference"
+      ]
+    }
+  ]
+}
