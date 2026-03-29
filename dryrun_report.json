@@ -1,0 +1,172 @@
+{
+  "generated_at": "2026-03-28 13:33:20",
+  "elapsed_seconds": 0.11,
+  "file_info": {
+    "path": "C:\\Users\\Malado Sidibe\\OneDrive\\Bureau\\BotOrNot\\data\\_dryrun_train.csv",
+    "format": "csv",
+    "n_rows": 2400,
+    "n_cols": 8
+  },
+  "columns": [
+    {
+      "column": "user_id",
+      "dtype": "str",
+      "missing_%": 0.0,
+      "n_unique": 240,
+      "sample": [
+        "u0",
+        "u0",
+        "u0"
+      ]
+    },
+    {
+      "column": "is_bot",
+      "dtype": "int64",
+      "missing_%": 0.0,
+      "n_unique": 2,
+      "sample": [
+        "1",
+        "1",
+        "1"
+      ]
+    },
+    {
+      "column": "followers_count",
+      "dtype": "int64",
+      "missing_%": 0.0,
+      "n_unique": 185,
+      "sample": [
+        "17",
+        "17",
+        "17"
+      ]
+    },
+    {
+      "column": "following_count",
+      "dtype": "int64",
+      "missing_%": 0.0,
+      "n_unique": 234,
+      "sample": [
+        "6869",
+        "6869",
+        "6869"
+      ]
+    },
+    {
+      "column": "statuses_count",
+      "dtype": "int64",
+      "missing_%": 0.0,
+      "n_unique": 239,
+      "sample": [
+        "59274",
+        "59274",
+        "59274"
+      ]
+    },
+    {
+      "column": "verified",
+      "dtype": "bool",
+      "missing_%": 0.0,
+      "n_unique": 1,
+      "sample": [
+        "False",
+        "False",
+        "False"
+      ]
+    },
+    {
+      "column": "created_at",
+      "dtype": "str",
+      "missing_%": 0.0,
+      "n_unique": 2400,
+      "sample": [
+        "2023-01-01 02:00:08.868783359+00:00",
+        "2023-01-01 02:00:16.447727591+00:00",
+        "2023-01-01 02:00:19.201146374+00:00"
+      ]
+    },
+    {
+      "column": "text",
+      "dtype": "str",
+      "missing_%": 0.0,
+      "n_unique": 2,
+      "sample": [
+        "buy now! http://spam.com #promo",
+        "buy now! http://spam.com #promo",
+        "buy now! http://spam.com #promo"
+      ]
+    }
+  ],
+  "signals": {
+    "text": {
+      "found": true,
+      "column": "text",
+      "avg_length": 27.6,
+      "empty_pct": 0.0
+    },
+    "timestamps": {
+      "found": true,
+      "column": "created_at",
+      "valid_pct": 100.0,
+      "min": "2023-01-01 02:00:02.036000999+00:00",
+      "max": "2023-01-02 00:12:58.351642628+00:00",
+      "granularity": "second"
+    },
+    "label": {
+      "found": true,
+      "column": "is_bot",
+      "distribution": {
+        "1": 1500,
+        "0": 900
+      },
+      "n_classes": 2,
+      "balance": "moderate_imbalance"
+    },
+    "account_id": {
+      "found": true,
+      "column": "user_id",
+      "n_unique": 240
+    },
+    "profile_features": {
+      "found": true,
+      "columns": {
+        "followers": "followers_count",
+        "following": "following_count",
+        "statuses": "statuses_count",
+        "verified": "verified"
+      }
+    }
+  },
+  "prediction_unit": "post (plusieurs lignes par compte)",
+  "recommendations": {
+    "tabular": {
+      "activate": true,
+      "reason": "Module baseline — toujours activé."
+    },
+    "text_basic": {
+      "activate": true,
+      "reason": "Texte détecté (longueur moy. 27.6 chars). TF-IDF léger activé."
+    },
+    "text_embeddings": {
+      "activate": false,
+      "reason": "Texte court ou dataset trop large → embeddings non recommandés."
+    },
+    "text_model": {
+      "activate": true,
+      "reason": "Modèle texte indépendant (TF-IDF) pour score texte fusionnable."
+    },
+    "temporal": {
+      "activate": true,
+      "reason": "Timestamps détectés (granularité: second)."
+    },
+    "structural": {
+      "activate": true,
+      "reason": "Signaux structurels trouvés : ['followers', 'following', 'statuses', 'verified']."
+    },
+    "relational": {
+      "activate": false,
+      "reason": "Pas de fichier d'arêtes → module relationnel désactivé (--edges <path>)."
+    }
+  },
+  "warnings": []
+}

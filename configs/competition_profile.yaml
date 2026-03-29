@@ -1,0 +1,78 @@
+# configs/competition_profile.yaml
+# Configuration alignée sur le format officiel de compétition BotOrNot
+# ─────────────────────────────────────────────────────────────
+
+# Format d'entrée/sortie officiel
+format:
+  input: "posts_users_json"          # dataset.posts&users.XX.json
+  output: "txt_ids_per_line"         # team.detections.XX.txt
+  team_name: "BotOrNot"
+
+# Scoring officiel asymétrique
+scoring:
+  tp_weight: +2                      # Récompense bot correctement détecté
+  fn_weight: -2                      # Pénalité bot raté
+  fp_weight: -6                      # Pénalité humain accusé à tort (3x FN !)
+
+# Champs disponibles dans le format officiel
+available_fields:
+  posts:
+    - text
+    - created_at
+    - id
+    - author_id
+    - lang
+  users:
+    - id
+    - username
+    - name
+    - description
+    - location
+    - tweet_count
+    - z_score
+
+# Modules de features à activer
+# Seuls les modules utilisables avec les champs officiels sont activés
+modules:
+  tabular: true                      # users.tweet_count, users.z_score, agrégats posts
+  temporal: true                     # posts.created_at → IPT, bursts, entropie horaire
+  text_basic: true                   # posts.text → TF-IDF, longueur, hashtags, URLs
+  text_model: false                  # désactivé — pas de GPU garanti en compétition
+  structural: false                  # désactivé — pas de followers/following/source dans le format final
+  relational: false                  # désactivé — pas d'edges_df dans le format final
+  coordination: false                # désactivé — reconstruire depuis timestamps seuls est trop fragile
+  embeddings: false                  # désactivé — pas de GPU garanti
+
+# Profil par défaut imposé par le scoring
+# Avec -6 FP, chaque faux positif coûte 3 bots ratés.
+# Le conservative est donc le choix optimal sauf signal exceptionnellement riche.
+default_profile: "conservative"
+
+# Features spécifiques exploitables depuis le format officiel
+competition_features:
+  from_users:
+    - tweet_count                    # volume de tweets (proxy activité)
+    - z_score                        # score anomalie fourni par l'organisateur
+    - description_length             # longueur bio
+    - has_description                # bio présente ?
+    - has_location                   # localisation renseignée ?
+    - username_length                # longueur du username
+    - name_length                    # longueur du display name
+    - name_equals_username           # nom == username (signe bot simple)
+  from_posts:
+    - post_count_per_user            # nombre de posts par utilisateur
+    - avg_text_length                # longueur moyenne texte
+    - text_diversity                 # ratio textes uniques / total
+    - url_ratio                      # % de posts avec URLs
+    - hashtag_ratio                  # % de posts avec hashtags
+    - mention_ratio                  # % de posts avec mentions
+    - lang_consistency               # tous les posts dans la même langue ?
+  from_temporal:
+    - ipt_mean                       # inter-post time moyen
+    - ipt_std                        # inter-post time écart-type
+    - ipt_cv                         # coefficient de variation
+    - night_ratio                    # ratio posts de nuit
+    - peak_ratio                     # ratio posts heures de pointe
+    - hour_entropy                   # entropie des heures de publication
+    - n_active_days                  # nombre de jours actifs
+    - posts_per_day                  # posts par jour actif

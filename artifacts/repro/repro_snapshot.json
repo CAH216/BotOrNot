@@ -1,6 +1,6 @@
 {
   "metadata": {
-    "generated_at": "2026-03-27T23:35:19.728299",
+    "generated_at": "2026-03-28T13:35:45.119387",
     "project": "BotOrNot"
   },
   "environment": {
@@ -286,12 +286,10 @@
     "repro_snapshot": "artifacts/repro/repro_snapshot.json"
   },
   "config_hashes_sha256": {
-    "golden_baseline.yaml": "49522352622ff818b929dd6c8de6c5322a7a221b7bc22e7fff59ed0091739257",
-    "submission_profiles.yaml": "eadf75c2417fd7445b8ef8a7984eec231ec934cdb694eab9d878b99e723af623",
-    "profiles.yaml": "Not Found",
-    "features.yaml": "d08083d5de01f43fbe12a6f07ac75829a5fff4dc99031666c459ebbcba24b6bb",
-    "models.yaml": "5d0d919c50f1ae3c44ab50453c9b35e9fde845b2d34524abde2d28474f6f17f3",
-    "inference.yaml": "78a5d8e329724483385a88618847f1f9bd902f5b4acb6cab5392c9c380201c21",
-    "premium_candidate.yaml": "Not Found"
+    "configs/golden_baseline.yaml": "49522352622ff818b929dd6c8de6c5322a7a221b7bc22e7fff59ed0091739257",
+    "configs/features.yaml": "d08083d5de01f43fbe12a6f07ac75829a5fff4dc99031666c459ebbcba24b6bb",
+    "configs/inference.yaml": "78a5d8e329724483385a88618847f1f9bd902f5b4acb6cab5392c9c380201c21",
+    "scripts/submission_factory.py": "335330b6b4c4ae138ce1e7d0122b6f6ddf876faba0590c453b7047f70e437140",
+    "scripts/meta_ranker.py": "630b946cae0c842c555e0d0f01b668ee89f1e815c55d0c5966a0d0013763f965"
   }
 }

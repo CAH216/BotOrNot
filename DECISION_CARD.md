@@ -1,18 +1,30 @@
-# ⚡ BOTORNOT — DECISION CARD (DAY J)
+# BotOrNot : Decision Card (Jour J)
 
-| Contexte / Signal | 🟢 Action Immédiate |
-|---|---|
-| **Métrique inconnue (Kaggle)** | Ciblez `F1-Score` et soumettez `submission_balanced.csv`. |
-| **Format `proba_only` requis** | Ciblez `AUROC` et soumettez `submission_aggressive.csv` (proba brute, 0 filtre). |
-| **Timestamps très riches**| Activez `temporal` et `coordination` dans `configs/features.yaml`. |
-| **Texte très faible (absent)**| Coupez `text_model`, gardez seulement `text_basic`. |
-| **Urgence absolue (Temps < 5min)**| `$env:PYTHONUTF8=1; python scripts/submission_factory.py --train data/train.csv --test data/test.csv` |
-| **Urgence extrême (Cut-Down)**| `$env:PYTHONUTF8=1; python scripts/run_baseline.py --train data/train.csv --test data/test.csv --profile balanced` |
-| **Doute sur la statégie**| `$env:PYTHONUTF8=1; python scripts/meta_ranker.py --train data/train.csv` |
+Aide-mémoire condensé pour l'opérateur humain.
 
----
+### Scoring Officiel
+`+2 TP` / `-2 FN` / **`-6 FP`** → 1 Faux Positif = 3 bots ratés
 
-### 🎯 PROFIL PAR DÉFAUT (Le Choix en cas de Doute)
-- **Défaut absolu si rien n'est clair** → `submission_balanced.csv`
-- **Si format proba_only / Maximize AUROC** → `submission_aggressive.csv`
-- **Si risque de Faux Positifs élevé** → `submission_conservative.csv`
+### Format d'Entrée
+`dataset.posts&users.XX.json` (pas de CSV, pas d'edges)
+
+### Format de Sortie
+`BotOrNot.detections.XX.txt` — un user ID par ligne (pas de CSV)
+
+### Profil par Défaut
+**Conservative** — imposé par le scoring asymétrique (-6 FP).
+
+### Commande Standard (Jour J)
+```powershell
+$env:PYTHONUTF8=1; python scripts/submission_factory.py --train data/train.csv --test data/test.csv --format official
+```
+
+### Urgence Absolue (< 5min)
+```powershell
+$env:PYTHONUTF8=1; python scripts/run_cutdown.py --train data/train.csv --test data/test.csv --profile conservative
+```
+
+### Quand changer de profil ?
+- **Signal exceptionnel + 0 ambiguïté + texte anglais riche** → `balanced`
+- **Tout autre cas** → `conservative`
+- **Jamais `aggressive`** avec le scoring officiel

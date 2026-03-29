@@ -33,7 +33,7 @@ SEP = "=" * 60
 def _banner(m): print(f"\n{SEP}\n  {m}\n{SEP}")
 
 
-def rank(report: dict, metric: str, fp_risk: str) -> dict:
+def rank(report: dict, metric: str, fp_risk: str, scoring: str = "f1") -> dict:
     """Logique décisionnelle du Meta-Ranker."""
     sig = report.get("signals", {})
     
@@ -51,22 +51,32 @@ def rank(report: dict, metric: str, fp_risk: str) -> dict:
 
     has_edges = "edges" in report
     
-    # ── 2. Recommandation du Profil de Soumission ──
-    metric = metric.lower()
+    # ── 2. Recommandation du Profil de Soumission (Validation Historique) ──
+    # Suite aux apprentissages des Events 30 (Anglais/Riche) et 31 (Français/Bruité)
     fp_risk = fp_risk.lower()
-    
-    if metric == "precision" or fp_risk == "high":
+    is_rich_signal = (text_richness == "high" and struct_avail == "high")
+    is_noisy_or_sparse = (text_richness in ["low", "none"] or struct_avail == "none")
+
+    # Scoring officiel : +2 TP / -2 FN / -6 FP → FP coûte 3x FN
+    # Avec ce barème, conservative est quasi-toujours optimal
+    if scoring == "official":
+        if is_rich_signal and fp_risk == "low":
+            profile = "balanced"
+            reason_prof = ("Scoring officiel (+2/-2/-6) MAIS signal exceptionnellement riche. "
+                          "Balanced reste prudent tout en maximisant le score.")
+        else:
+            profile = "conservative"
+            reason_prof = ("Scoring officiel (+2/-2/-6) : chaque FP coûte 3× un FN. "
+                          "Le profil conservative maximise le score officiel en minimisant les FP.")
+    elif is_noisy_or_sparse or fp_risk == "high":
         profile = "conservative"
-        reason_prof = "Priorité à l'évitement des Faux Positifs (Métrique=Precision ou Risque FP très élevé)."
-    elif metric == "recall" or (metric == "auroc" and fp_risk == "low"):
+        reason_prof = "Dataset s'apparentant au profil Français/Bruité (Event 31). Priorité absolue à la limitation des Faux Positifs via l'Anti-FP fort."
+    elif is_rich_signal and fp_risk == "low":
         profile = "aggressive"
-        reason_prof = "Priorité à la détection maximale de bots (Métrique=Recall ou AUROC avec tolérance aux FP)."
-    else:  # f1, auroc with medium risk
+        reason_prof = "Dataset s'apparentant au profil Anglais/Riche (Event 30). Signal fort, faible ambiguïté. Maximisation de la détection (Aggressive)."
+    else:  
         profile = "balanced"
-        reason_prof = "Meilleur compromis F1/Précision global (Métrique F1 ou AUROC avec risque FP modéré)."
-        
-    if metric == "auroc":
-        reason_prof += " [AUROC: La métrique ne dépend pas du seuil, mais tester 'balanced' ou 'aggressive']."
+        reason_prof = "Dataset mixte ou profil par défaut. Compromis optimal entre F1 et contrôle FP."
 
     # ── 3. Recommandation des Modules ──
     modules = {}
@@ -129,6 +139,8 @@ def main():
                         help="Métriques officielle de la compétition.")
     parser.add_argument("--fp-risk", choices=["low", "medium", "high"], default="high",
                         help="Pénalité/Risque si on bannit un vrai humain par erreur.")
+    parser.add_argument("--scoring", choices=["f1", "official"], default="official",
+                        help="Mode de scoring : f1 (classique) ou official (+2 TP / -2 FN / -6 FP).")
     
     args = parser.parse_args()
     
@@ -145,10 +157,13 @@ def main():
         report = inspect(args.train, args.edges)
         
     # Lancer le ranker
-    result = rank(report, args.metric, args.fp_risk)
+    result = rank(report, args.metric, args.fp_risk, args.scoring)
     
     _banner("🧠 META-RANKER — RECOMMANDATIONS")
     
+    if args.scoring == "official":
+        print("  ⚠️  SCORING OFFICIEL : +2 TP / -2 FN / -6 FP")
+        print("  ⚠️  Chaque Faux Positif coûte 3× un Faux Négatif !\n")
     print(f"  Métrique cible : {args.metric.upper()}")
     print(f"  Risque Faux Positifs : {args.fp_risk.upper()}\n")
     
@@ -164,8 +179,8 @@ def main():
     print(f"\n{SEP}")
     print("  ACTIONS :")
     print("  1. Ajustez configs/features.yaml selon les recommandations ci-dessus.")
-    print(f"  2. Lancez `python scripts/submission_factory.py --train {args.train or 'data/train.csv'}`")
-    print(f"  3. Soumettez le fichier `submission_{result['profile']}.csv`")
+    print(f"  2. Lancez `python scripts/submission_factory.py --train {args.train or 'data/train.csv'} --format official`")
+    print(f"  3. Soumettez le fichier `BotOrNot.detections.XX.txt`")
     print(SEP)
     
 

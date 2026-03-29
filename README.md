@@ -1,39 +1,50 @@
 # 🤖 BotOrNot — Pipeline de Détection de Bots
 
-Un pipeline **modulaire**, **robuste** et **compétitif** pour détecter les faux comptes sur les réseaux sociaux. Conçu pour fonctionner rapidement sur des datasets variés, même sans labels, même sans timestamps, même sans graphe.
+Pipeline **modulaire** et **robuste** pour détecter les faux comptes sur les réseaux sociaux.  
+Optimisé pour le **scoring officiel** : `+2 TP` / `-2 FN` / **`-6 FP`**
 
 ---
 
-## ⚡ Démarrage rapide
+## ⚡ Démarrage rapide (Jour J)
 
 ### 1. Installer les dépendances
 
 ```bash
-pip install pandas numpy scikit-learn lightgbm catboost xgboost joblib pyyaml pytest
+pip install pandas numpy scikit-learn lightgbm catboost joblib pyyaml pytest
 ```
 
-### 2. Inspecter votre dataset
+### 2. Lancer le pipeline complet (format officiel)
 
-Avant tout, lancez ce script pour comprendre vos données en **quelques secondes** :
-
-```bash
-python scripts/inspect_dataset.py data/train.csv
+```powershell
+$env:PYTHONUTF8=1; python scripts/submission_factory.py --train data/train.csv --test data/test.csv --format official
 ```
 
-Il vous dira :
-- Quelles colonnes sont présentes
-- Si des timestamps, du texte ou des labels sont détectés
-- **Quels modules activer** pour votre dataset
+Sortie : `BotOrNot.detections.{conservative,balanced,aggressive}.txt` — un user ID par ligne.
 
-### 3. Lancer le pipeline en mode urgence
+### 3. Évaluer localement avec le scoring officiel
 
-Pour obtenir une **soumission compétitive en < 5 minutes** :
-
-```bash
-python scripts/run_baseline.py --train data/train.csv --test data/test.csv
+```powershell
+$env:PYTHONUTF8=1; python scripts/official_score.py --predicted predictions.txt --truth bots.txt
 ```
 
-Résultat : `artifacts/submissions/baseline.csv` avec les prédictions.
+---
+
+## 🏆 Scoring Officiel
+
+| Événement | Gain/Pénalité |
+|-----------|--------------|
+| **Vrai Positif** (bot détecté) | **+2** |
+| **Faux Négatif** (bot raté) | **-2** |
+| **Faux Positif** (humain accusé) | **-6** |
+
+> ⚠️ **1 Faux Positif coûte 3 bots ratés.** Le profil `conservative` est le choix par défaut.
+
+## 📊 Benchmarks Validés
+
+| Dataset | Conservative | Balanced | Aggressive |
+|---------|-------------|----------|------------|
+| **Event 30 (EN)** — 275 users | +68 | **+72** ⭐ | +72 |
+| **Event 31 (FR)** — 129 users | **+6** ⭐ | 0 ❌ | +4 |
 
 ---
 
@@ -42,235 +53,129 @@ Résultat : `artifacts/submissions/baseline.csv` avec les prédictions.
 ```
 BotOrNot/
 │
-├── data/                        # Données brutes (non versionnées)
-│   ├── train.csv
-│   └── test.csv
+├── data/                        # Données (non versionnées)
+├── dataset/                     # Datasets historiques (Events 30, 31)
 │
-├── configs/                     # Configuration du pipeline (YAML)
-│   ├── default.yaml             # Chemins, seed, seuils globaux
-│   ├── features.yaml            # Modules de features à activer/désactiver
-│   ├── models.yaml              # Hyperparamètres des modèles
-│   ├── cv.yaml                  # Stratégie de validation croisée
-│   └── inference.yaml           # Paramètres d'export et seuils
+├── configs/
+│   ├── default.yaml             # Config globale
+│   ├── features.yaml            # Modules de features
+│   ├── competition_profile.yaml # Format officiel compétition
+│   ├── models.yaml              # Hyperparamètres modèles
+│   └── cv.yaml                  # Stratégie de validation croisée
 │
-├── src/                         # Code source principal
-│   ├── data/                    # Chargement et profiling des données
+├── src/
+│   ├── data/                    # Chargement et profiling
+│   │   └── adapters/            # Framework d'adaptateurs (historical, generic, twibot22)
 │   ├── preprocessing/           # Normalisation colonnes, dates, texte
-│   ├── features/                # Modules de features (voir ci-dessous)
+│   ├── features/                # Modules de features
 │   ├── models/                  # Modèles ML (LightGBM, CatBoost, LR…)
 │   ├── evaluation/              # Métriques et analyse d'erreurs
-│   ├── inference/               # Prédiction et export soumission
-│   ├── utils/                   # Logging, seed, timing
+│   ├── inference/               # Prédiction, anti-FP, export
 │   └── cli/                     # Point d'entrée pipeline complet
 │
-├── scripts/                     # Scripts standalone
+├── scripts/
+│   ├── submission_factory.py    # 🏭 Générateur de soumissions (3 profils)
+│   ├── official_score.py        # 🏆 Scoring officiel (+2/-2/-6)
+│   ├── competition_benchmark.py # 📊 Benchmark format officiel
+│   ├── meta_ranker.py           # 🧠 Recommandation de profil
 │   ├── inspect_dataset.py       # 🔍 Inspection rapide d'un dataset
-│   └── run_baseline.py          # 🚀 Pipeline compétitif d'urgence
+│   ├── run_baseline.py          # 🚀 Pipeline d'urgence
+│   ├── run_cutdown.py           # ⚡ Version ultra-légère
+│   ├── historical_benchmark.py  # 📈 Benchmark Events 30/31
+│   ├── adversarial_robustness.py# 🛡️ Audit adversarial (4 scénarios)
+│   ├── repro_audit.py           # 🔒 Audit de reproductibilité
+│   └── ablation.py              # 🔬 Ablation study
 │
-├── tests/                       # Tests unitaires
-│   ├── test_loaders.py
-│   ├── test_temporal_features.py
-│   ├── test_text_cleaning.py
-│   ├── test_feature_assembly.py
-│   └── test_submission.py
+├── tests/                       # Tests unitaires + non-régression
 │
-└── artifacts/                   # Sorties générées (modèles, soumissions)
-    ├── models/
-    └── submissions/
+├── PLAYBOOK.md                  # Guide opérationnel Jour J
+├── DECISION_CARD.md             # Aide-mémoire rapide
+├── RULES.md                     # Règles de développement
+└── COMPETITION_FREEZE.md        # Gel du code pour compétition
 ```
 
 ---
 
-## 🔍 Script 1 — Inspection de dataset
+## 🏭 Submission Factory
 
-**Fichier :** `scripts/inspect_dataset.py`
+Le script principal de la compétition. Produit 3 soumissions en un seul run.
 
-Analyse un fichier en quelques secondes et produit un rapport complet.
+```powershell
+# Mode compétition (sortie .txt)
+$env:PYTHONUTF8=1; python scripts/submission_factory.py \
+    --train data/train.csv --test data/test.csv \
+    --format official --team-name BotOrNot
 
-```bash
-# Inspection basique
-python scripts/inspect_dataset.py data/train.csv
-
-# Avec un fichier d'arêtes (graphe de relations)
-python scripts/inspect_dataset.py data/train.csv --edges data/edges.csv
-
-# Sauvegarder le rapport en JSON
-python scripts/inspect_dataset.py data/train.csv --output artifacts/rapport
+# Mode classique (sortie .csv)
+$env:PYTHONUTF8=1; python scripts/submission_factory.py \
+    --train data/train.csv --test data/test.csv
 ```
 
-**Ce que le script détecte automatiquement :**
+**Profils disponibles :**
 
-| Signal | Description |
-|---|---|
-| `account_id` | Colonne identifiant unique du compte |
-| `texte` | Contenu textuel (tweets, posts, bio) |
-| `timestamps` | Dates de publication |
-| `label` | Colonne cible (is_bot, label…) |
-| `profil` | followers, following, statuses, source… |
-| `graphe` | Arêtes entre comptes (si fourni) |
-
-**Recommandations automatiques :** Le script détermine quels modules activer selon vos données.
+| Profil | Seuil | Anti-FP | Usage |
+|--------|-------|---------|-------|
+| `conservative` | 0.60 | Fort | **Défaut** — Minimise les FP |
+| `balanced` | F1-auto | Modéré | Compromis F1 / FP |
+| `aggressive` | 0.38 | Désactivé | Recall maximal (⚠️ dangereux avec -6 FP) |
 
 ---
 
-## 🚀 Script 2 — Baseline d'urgence
+## 🧠 Meta-Ranker
 
-**Fichier :** `scripts/run_baseline.py`
+Analyse le dataset et recommande le profil optimal.
 
-Pipeline complet de bout en bout, auto-suffisant.
-
-```bash
-# Mode standard (LightGBM, 5-fold CV)
-python scripts/run_baseline.py --train data/train.csv --test data/test.csv
-
-# Avec CatBoost et seuil personnalisé
-python scripts/run_baseline.py \
-    --train data/train.csv \
-    --test data/test.csv \
-    --model catboost \
-    --threshold 0.55 \
-    --out artifacts/submissions/mon_run
-
-# Mode ultra-rapide (sans CV)
-python scripts/run_baseline.py --train data/train.csv --no-cv
-
-# Colonnes non standard
-python scripts/run_baseline.py \
-    --train data/train.csv \
-    --label-col is_fake \
-    --id-col author_id
+```powershell
+$env:PYTHONUTF8=1; python scripts/meta_ranker.py --train data/train.csv --scoring official
 ```
 
-**Options disponibles :**
+---
 
-| Option | Défaut | Description |
-|---|---|---|
-| `--train` | *(requis)* | Fichier d'entraînement |
-| `--test` | *(optionnel)* | Fichier de test (export prédictions) |
-| `--model` | `lgbm` | `lgbm` · `catboost` · `lr` (fallback auto) |
-| `--cv-folds` | `5` | Nombre de folds |
-| `--threshold` | auto | Seuil de décision (auto = F1-optimal conservateur) |
-| `--seed` | `42` | Reproductibilité |
-| `--out` | `artifacts/submissions/baseline` | Préfixe des fichiers de sortie |
-| `--label-col` | auto | Nom de la colonne label |
-| `--id-col` | auto | Nom de la colonne identifiant |
-| `--no-cv` | false | Désactive la CV (plus rapide) |
+## 🛡️ Audit de Robustesse Adversariale
 
-**Fichiers générés :**
+Teste le pipeline contre 4 types de bots furtifs :
 
-| Fichier | Contenu |
-|---|---|
-| `baseline.csv` | Soumission : `account_id`, `prob_bot`, `label`, `label_text` |
-| `baseline_meta.json` | AUC, F1, seuil, config complète du run |
-| `baseline_feature_importances.csv` | Top features par importance |
+| Scénario | Description | Résultat |
+|----------|-------------|---------|
+| **Sleeper Bot** | Bursts + silence 8-12h | 🟢 SAFE |
+| **Jitter Bot** | Délais aléatoires | 🟢 SAFE |
+| **LLM Bot** | Texte fluide, faible volume | 🟢 SAFE |
+| **Camouflage Bot** | Imitation complète profil humain | 🟢 SAFE |
+
+```powershell
+$env:PYTHONUTF8=1; python scripts/adversarial_robustness.py
+```
 
 ---
 
 ## 🧩 Modules de features
 
-Les features sont construites par **modules indépendants**, chacun activable séparément selon les données disponibles.
-
-| Module | Fichier | Require | Ce qu'il produit |
-|---|---|---|---|
-| **Tabular** | `features/tabular.py` | colonnes numériques | Ratios followers/following, logs, engagement |
-| **Temporal** | `features/temporal.py` | timestamps | IPT moyen/std, entropie horaire, ratio nuit, span |
-| **Text Basic** | `features/text_basic.py` | colonne texte | Longueur, URLs, mentions, hashtags, majuscules |
-| **Structural** | `features/structural.py` | profil (source, client…) | Anomalies de format, patterns d'IDs, séquentialité |
-| **Relational** | `features/relational.py` | fichier edges | Degree, clustering, reciprocity, taille composante |
-| **Text Embeddings** | `features/text_embeddings.py` | colonne texte | Embeddings sentence-transformers (optionnel) |
-| **Assembler** | `features/assembler.py` | tous | Fusion de tous les blocs en une matrice unique |
+| Module | Activé par défaut | Ce qu'il produit |
+|--------|-------------------|------------------|
+| **Tabular** | ✅ | tweet_count, z_score, bio/username stats |
+| **Temporal** | ✅ | IPT moyen/std/CV, entropie horaire, ratio nuit |
+| **Text Basic** | ✅ | Longueur, URLs, mentions, hashtags, diversité |
+| **Structural** | ❌ (pas dans format officiel) | Anomalies de format, patterns d'IDs |
+| **Relational** | ❌ (pas d'edges) | Degree, clustering, reciprocity |
+| **Embeddings** | ❌ (pas de GPU garanti) | Sentence-transformers |
 
 ---
 
-## 🤖 Modèles disponibles
+## 🔍 Inspection de dataset
 
-| Modèle | Fichier | Notes |
-|---|---|---|
-| LightGBM | `models/lightgbm_model.py` | Recommandé — rapide, performant |
-| CatBoost | `models/catboost_model.py` | Bon sur features catégorielles |
-| XGBoost | `models/xgboost_model.py` | Alternative robuste |
-| Logistic Regression | `models/baseline_lr.py` | Fallback garanti si rien d'autre |
-| Modèle texte | `models/text_model.py` | TF-IDF indépendant, score fusionnable |
-| Ensemble | `models/ensemble.py` | Blending pondéré de plusieurs scores |
-| Calibration | `models/calibrator.py` | Calibre les probabilités brutes |
-| Seuillage | `models/thresholding.py` | Seuil F1-optimal, conservateur, configurable |
-
----
-
-## ⚙️ Configuration
-
-Tous les comportements du pipeline sont pilotables **sans modifier le code**, via les fichiers YAML de `configs/`.
-
-```yaml
-# configs/default.yaml — exemple
-seed: 42
-threshold: 0.5
-data:
-  train: data/train.csv
-  test: data/test.csv
-
-# configs/features.yaml — activer/désactiver des modules
-features:
-  tabular: true
-  temporal: true
-  text_basic: true
-  text_embeddings: false   # coûteux, à activer si le dataset le justifie
-  structural: true
-  relational: false        # à activer si edges.csv fourni
+```bash
+python scripts/inspect_dataset.py data/train.csv
 ```
+
+Détecte automatiquement : colonnes, timestamps, texte, labels, types de features.
 
 ---
 
 ## 🧪 Tests
 
-La suite de tests valide les briques critiques du pipeline.
-
 ```bash
-# Lancer tous les tests
 python -m pytest tests/ -v
-
-# Un seul fichier
-python -m pytest tests/test_temporal_features.py -v
 ```
-
-**Résultats actuels :** `56 passed, 3 skipped, 0 failed`
-
-| Fichier de test | Ce qui est testé |
-|---|---|
-| `test_loaders.py` | Chargement CSV/JSON, normalisation colonnes |
-| `test_temporal_features.py` | IPT, entropie horaire, ratio nuit, edge cases |
-| `test_text_cleaning.py` | `clean_text`, `clean_posts_df`, `parse_date_column` |
-| `test_feature_assembly.py` | `FeatureAssembler`, features tabulaires, LR |
-| `test_submission.py` | LR fit/predict/save/load, export soumission |
-
----
-
-## 🔄 Pipeline complet (avancé)
-
-Pour les utilisateurs avancés, le CLI orchestré est disponible :
-
-```bash
-# Entraînement complet
-python -m src.cli.main train --config configs/default.yaml
-
-# Prédiction / inférence
-python -m src.cli.main predict --config configs/inference.yaml
-
-# Évaluation
-python -m src.cli.main evaluate --config configs/default.yaml
-```
-
----
-
-## 💡 Conseils pratiques
-
-**Je n'ai pas de timestamps →** Le module temporel se désactive automatiquement. Les features tabulaires et textuelles suffisent.
-
-**Je n'ai pas de labels →** Utilisez `run_baseline.py` sans `--test`, le script exporte les prédictions OOF. Pour l'inférence pure, utilisez `src.cli.main predict`.
-
-**Mon dataset est déséquilibré →** Tous les modèles utilisent `class_weight='balanced'` par défaut. Augmentez le seuil (`--threshold 0.55` ou `0.6`) si vous voulez réduire les faux positifs.
-
-**Je veux reproduire un run →** Chaque export `_meta.json` contient le seed, le seuil, les fold AUCs et la config complète utilisée.
 
 ---
 
@@ -280,9 +185,8 @@ python -m src.cli.main evaluate --config configs/default.yaml
 pandas >= 1.5
 numpy >= 1.23
 scikit-learn >= 1.2
-lightgbm >= 3.3          # optionnel mais recommandé
+lightgbm >= 3.3          # recommandé
 catboost >= 1.2           # optionnel
-xgboost >= 1.7            # optionnel
 joblib >= 1.2
 pyyaml >= 6.0
 pytest >= 7.0
@@ -290,4 +194,4 @@ pytest >= 7.0
 
 ---
 
-*Projet BotOrNot — Pipeline anti-fraude modulaire. Conçu pour être robuste, reproductible et compétitif dès le Jour J.*
+*Projet BotOrNot — Pipeline anti-fraude modulaire. Scoring officiel : +2 TP / -2 FN / -6 FP.*

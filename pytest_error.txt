@@ -1,0 +1,8 @@
+Traceback (most recent call last):
+  File "<string>", line 9, in <module>
+  File "C:\Users\Malado Sidibe\OneDrive\Bureau\BotOrNot\tests\test_historical_adapter.py", line 65, in test_historical_adapter_loading
+    assert act.loc[act[AccountCols.ID] == "u1", AccountCols.SCREEN_NAME].iloc[0] == "Alice"
+           ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "C:\Users\Malado Sidibe\AppData\Roaming\Python\Python311\site-packages\pandas\core\generic.py", line 1513, in __bool__
+    raise ValueError(
+ValueError: The truth value of a Series is ambiguous. Use a.empty, a.bool(), a.item(), a.any() or a.all().

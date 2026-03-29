@@ -220,6 +220,7 @@ def _generate_for_profile(
     label_col: str,
     out_dir: str,
     meta_base: dict,
+    args=None,
 ) -> dict:
     _log(f"  Profil [{profile_name}] — {profile_cfg['description']}")
 
@@ -291,6 +292,19 @@ def _generate_for_profile(
         json.dump(meta, f, indent=2, ensure_ascii=False, default=str)
 
     _log(f"    ✅  {csv_path}  ({labels.sum()} bots / {len(labels)} comptes)")
+
+    # ── Format Officiel (.txt) si demandé ────────────────────────────
+    official_format = getattr(args, 'format', 'csv') if args else 'csv'
+    team_name = getattr(args, 'team_name', 'BotOrNot') if args else 'BotOrNot'
+    if official_format == "official":
+        bot_ids = [uid for uid, lab in zip(test_ids, labels) if lab == 1]
+        txt_path = os.path.join(out_dir, f"{team_name}.detections.{profile_name}.txt")
+        with open(txt_path, "w", encoding="utf-8") as f:
+            for uid in bot_ids:
+                f.write(f"{uid}\n")
+        _log(f"    🏆  {txt_path}  ({len(bot_ids)} bots détectés)")
+        meta["output_txt"] = txt_path
+
     return metrics
 
 
@@ -424,6 +438,7 @@ def run_factory(args) -> None:
             label_col=label_col,
             out_dir=args.out,
             meta_base=meta_base,
+            args=args,
         )
         all_metrics.append(m)
 
@@ -470,6 +485,10 @@ def main():
     p.add_argument("--out",       default="artifacts/submissions")
     p.add_argument("--label-col", default=None)
     p.add_argument("--id-col",    default=None)
+    p.add_argument("--format",    default="csv", choices=["csv", "official"],
+                   help="Format de sortie : csv (classique) ou official (fichier .txt, 1 ID bot/ligne)")
+    p.add_argument("--team-name", default="BotOrNot",
+                   help="Nom d'équipe pour le nommage des fichiers officiels")
     args = p.parse_args()
     run_factory(args)
 

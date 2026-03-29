@@ -1,5 +1,5 @@
 # Audit de Reproductibilité — BotOrNot
-**Date de génération** : 2026-03-27 23:35:19
+**Date de génération** : 2026-03-28 13:35:45
 
 ## 1. Environnement d'Exécution
 - **OS** : Windows 10 (10.0.26200)
@@ -45,12 +45,10 @@ Ces hash garantissent que les règles d'extraction n'ont pas été altérées en
 | Fichier | Statut | Hash SHA-256 |
 |---|---|---|
 | `configs/golden_baseline.yaml` | ✅ Présent | `49522352622ff818...` |
-| `configs/submission_profiles.yaml` | ✅ Présent | `eadf75c2417fd744...` |
-| `configs/profiles.yaml` | ❌ Absent | `Not Found...` |
 | `configs/features.yaml` | ✅ Présent | `d08083d5de01f43f...` |
-| `configs/models.yaml` | ✅ Présent | `5d0d919c50f1ae3c...` |
 | `configs/inference.yaml` | ✅ Présent | `78a5d8e329724483...` |
-| `configs/premium_candidate.yaml` | ❌ Absent | `Not Found...` |
+| `scripts/submission_factory.py` | ✅ Présent | `335330b6b4c4ae13...` |
+| `scripts/meta_ranker.py` | ✅ Présent | `630b946cae0c842c...` |
 
 ## 5. Dépendances Python Majeures (Extrait)
 - **pandas** : 3.0.1

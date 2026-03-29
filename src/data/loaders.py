@@ -410,24 +410,43 @@ def load_bundle(
     labels_path: Optional[str | Path] = None,
     mode: str = "auto",
     nrows: Optional[int] = None,
+    adapter: str = "auto",
 ) -> DataBundle:
     """
     Point d'entree principal recommande.
 
-    Modes :
-        "auto"     — detecte automatiquement (un seul fichier)
+    Modes originaux :
+        "auto"     — detecte automatiquement (un seul fichier csv/json)
         "accounts" — force interpretation comme fichier de comptes
         "posts"    — force interpretation comme fichier de posts
-        "multi"    — utilise plusieurs fichiers (posts_path, edges_path, labels_path)
+        "multi"    — utilise plusieurs fichiers (posts_path, edges_path, ...)
 
     Args:
-        input_path  : fichier principal
+        input_path  : fichier ou DOSSIER principal (ex: dossier twibot-22)
         posts_path  : fichier posts (mode multi uniquement)
         edges_path  : fichier edges (optionnel)
         labels_path : fichier labels (optionnel)
         mode        : "auto" | "accounts" | "posts" | "multi"
         nrows       : limite de lignes
+        adapter     : Nom de l'adaptateur ("auto", "flat-file", "twibot-22")
     """
+    # 1. Résolution via le Framework d'Adaptateurs
+    from src.data.adapters.registry import get_adapter
+    
+    selected_adapter = get_adapter(adapter_name=adapter, path=input_path)
+    
+    if selected_adapter.name != "flat-file":
+        logger.info(f"Délégation de l'ingestion à l'adaptateur: {selected_adapter.name}")
+        return selected_adapter.load(
+            base_path=input_path, 
+            nrows=nrows, 
+            posts_path=posts_path, 
+            edges_path=edges_path, 
+            labels_path=labels_path
+        )
+
+    # 2. Fallback au Legacy Loader (FlatFile interne)
+    logger.info("Délégation de l'ingestion à l'adaptateur: flat-file (legacy)")
     if mode == "multi" or (posts_path or edges_path or labels_path):
         return load_multi(
             accounts_path = input_path,

@@ -70,20 +70,29 @@ def generate_audit():
         "repro_snapshot": "artifacts/repro/repro_snapshot.json"
     }
     
-    # Hashes des configs critiques
+    # Fichiers critiques (Les YAML purement indicatifs sont retirés)
     config_dir = Path("configs")
     target_configs = [
         "golden_baseline.yaml",
-        "submission_profiles.yaml",
         "features.yaml",
-        "models.yaml",
         "inference.yaml"
+    ]
+    
+    # Scripts Python contenant de la logique décisionnelle jour J
+    core_dir = Path("scripts")
+    target_scripts = [
+        "submission_factory.py",
+        "meta_ranker.py"
     ]
     
     hashes = {}
     for c in target_configs:
         p = config_dir / c
-        hashes[c] = file_sha256(str(p))
+        hashes[f"configs/{c}"] = file_sha256(str(p))
+        
+    for s in target_scripts:
+        p = core_dir / s
+        hashes[f"scripts/{s}"] = file_sha256(str(p))
         
     audit_data = {
         "metadata": {
@@ -152,7 +161,7 @@ def generate_audit():
     
     for c, h in hashes.items():
         stat = "✅ Présent" if h != "Not Found" else "❌ Absent"
-        lines.append(f"| `configs/{c}` | {stat} | `{h[:16]}...` |")
+        lines.append(f"| `{c}` | {stat} | `{h[:16]}...` |")
         
     lines.append("\n## 5. Dépendances Python Majeures (Extrait)")
     key_deps = ["pandas", "numpy", "scikit-learn", "lightgbm", "catboost", "pyyaml"]
