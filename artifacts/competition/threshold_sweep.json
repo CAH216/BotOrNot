@@ -1,0 +1,102 @@
+{
+  "Event30_EN": {
+    "n_bots": 66,
+    "n_humans": 209,
+    "max_score": 132,
+    "optimal": {
+      "threshold": 0.3,
+      "score": 76,
+      "tp": 58,
+      "fp": 4,
+      "fn": 8,
+      "precision": 0.9355,
+      "recall": 0.8788
+    },
+    "at_060": {
+      "threshold": 0.6,
+      "score": 68,
+      "tp": 56,
+      "fp": 4,
+      "fn": 10,
+      "precision": 0.9333,
+      "recall": 0.8485
+    },
+    "at_050": {
+      "threshold": 0.5,
+      "score": 72,
+      "tp": 57,
+      "fp": 4,
+      "fn": 9,
+      "precision": 0.9344,
+      "recall": 0.8636
+    },
+    "at_040": {
+      "threshold": 0.4,
+      "score": 72,
+      "tp": 57,
+      "fp": 4,
+      "fn": 9,
+      "precision": 0.9344,
+      "recall": 0.8636
+    },
+    "at_038": {
+      "threshold": 0.38,
+      "score": 72,
+      "tp": 57,
+      "fp": 4,
+      "fn": 9,
+      "precision": 0.9344,
+      "recall": 0.8636
+    }
+  },
+  "Event31_FR": {
+    "n_bots": 27,
+    "n_humans": 144,
+    "max_score": 54,
+    "optimal": {
+      "threshold": 0.3,
+      "score": 8,
+      "tp": 20,
+      "fp": 3,
+      "fn": 7,
+      "precision": 0.8696,
+      "recall": 0.7407
+    },
+    "at_060": {
+      "threshold": 0.6,
+      "score": 6,
+      "tp": 18,
+      "fp": 2,
+      "fn": 9,
+      "precision": 0.9,
+      "recall": 0.6667
+    },
+    "at_050": {
+      "threshold": 0.5,
+      "score": 0,
+      "tp": 18,
+      "fp": 3,
+      "fn": 9,
+      "precision": 0.8571,
+      "recall": 0.6667
+    },
+    "at_040": {
+      "threshold": 0.4,
+      "score": 0,
+      "tp": 18,
+      "fp": 3,
+      "fn": 9,
+      "precision": 0.8571,
+      "recall": 0.6667
+    },
+    "at_038": {
+      "threshold": 0.38,
+      "score": 4,
+      "tp": 19,
+      "fp": 3,
+      "fn": 8,
+      "precision": 0.8636,
+      "recall": 0.7037
+    }
+  }
+}

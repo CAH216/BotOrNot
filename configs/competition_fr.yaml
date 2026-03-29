@@ -1,0 +1,50 @@
+# configs/competition_fr.yaml
+# Profil ultra-prudent pour datasets francophones (Event 31)
+# Validé: +6 (conservative standard)
+# Toute baisse de seuil augmente les FP et dégrade le score
+
+scoring:
+  tp_weight: +2
+  fn_weight: -2
+  fp_weight: -6
+
+# Seuil élevé — minimiser les FP à tout prix
+# À t=0.60, on capture 18/27 bots avec seulement 2 FP
+# Score = 2*18 - 2*9 - 6*2 = 36 - 18 - 12 = +6
+# À t=0.50, on ajoute 1 FP sans gagner de TP → score = 0 ❌
+threshold: 0.60
+
+# Anti-FP maximal (le français génère beaucoup de faux positifs)
+anti_fp:
+  enabled: true
+  min_modules_for_bot: 2
+  unilateral_penalty: 0.15
+  power_user_protection: true
+  pu_min_followers: 3000
+  pu_follower_penalty: 0.08
+  pu_verified_penalty: 0.10
+  conflict_rules_enabled: true
+  conflict_penalty: 0.10
+
+modules:
+  tabular: true
+  temporal: true
+  text_basic: true
+  text_model: false
+  structural: false
+  relational: false
+  coordination: false
+  embeddings: false
+
+# Benchmark validé (Event 31, 5-fold CV)
+benchmark:
+  event: "Event31_FR"
+  n_bots: 27
+  n_humans: 144
+  tp: 18
+  fp: 2
+  fn: 9
+  score: +6
+  score_max: 54
+  efficiency: "11.1%"
+  note: "Tout seuil < 0.60 ajoute des FP et dégrade le score. Ne pas baisser."

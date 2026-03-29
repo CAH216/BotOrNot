@@ -1,0 +1,44 @@
+# configs/competition_en.yaml
+# Profil optimisé pour datasets anglophones (Event 30)
+# Validé: +76 (vs +68 conservative unifié) = gain +8
+
+scoring:
+  tp_weight: +2
+  fn_weight: -2
+  fp_weight: -6
+
+# Seuil optimisé pour l'anglais
+# À t=0.30, on capture 58/66 bots avec seulement 4 FP
+# Score = 2*58 - 2*8 - 6*4 = 116 - 16 - 24 = +76
+threshold: 0.30
+
+# Anti-FP modéré (l'anglais a moins de faux positifs)
+anti_fp:
+  enabled: true
+  min_modules_for_bot: 1
+  unilateral_penalty: 0.08
+  power_user_protection: true
+  pu_min_followers: 10000
+
+modules:
+  tabular: true
+  temporal: true
+  text_basic: true
+  text_model: false
+  structural: false
+  relational: false
+  coordination: false
+  embeddings: false
+
+# Benchmark validé (Event 30, 5-fold CV)
+benchmark:
+  event: "Event30_EN"
+  n_bots: 66
+  n_humans: 209
+  tp: 58
+  fp: 4
+  fn: 8
+  score: +76
+  score_max: 132
+  efficiency: "57.6%"
+  gain_vs_conservative: "+8 pts"
