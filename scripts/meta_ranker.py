@@ -75,8 +75,8 @@ def rank(report: dict, metric: str, fp_risk: str, scoring: str = "f1") -> dict:
         profile = "aggressive"
         reason_prof = "Dataset s'apparentant au profil Anglais/Riche (Event 30). Signal fort, faible ambiguïté. Maximisation de la détection (Aggressive)."
     else:  
-        profile = "balanced"
-        reason_prof = "Dataset mixte ou profil par défaut. Compromis optimal entre F1 et contrôle FP."
+        profile = "conservative"
+        reason_prof = "Dataset mixte ou inconnu. Le profil conservative est le défaut absolu pour minimiser les FP."
 
     # ── 3. Recommandation des Modules ──
     modules = {}

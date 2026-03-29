@@ -252,7 +252,7 @@ def main():
     p = argparse.ArgumentParser(description="⚡ Cut-down baseline BotOrNot (tabular+temporal)")
     p.add_argument("--train",       required=True)
     p.add_argument("--test",        default=None)
-    p.add_argument("--profile",     default="balanced",
+    p.add_argument("--profile",     default="conservative",
                    choices=["conservative", "balanced"])
     p.add_argument("--model",       default="lgbm", choices=["lgbm", "lr"])
     p.add_argument("--cv-folds",    type=int,   default=3)   # 3 par défaut pour la vitesse

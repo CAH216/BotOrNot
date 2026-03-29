@@ -6,49 +6,73 @@ Toute R&D exploratoire est suspendue. L'architecture a été validée via les é
 
 ---
 
-## 1. Profils Disponibles & Logique Décisionnelle
-La sélection du profil dépend de la nature des données testées, validée sur nos benchmarks linguistiques.
-Le choix du profil s'effectuera via la recommandation automatique du `meta_ranker.py`.
+## ⚠️ Scoring Officiel
 
-* **Balanced** (DÉFAUT) : Compromis optimal. Filtre Anti-FP modéré. Utilisé en l'absence de signaux extrêmes.
-* **Conservative** : Priorité absolue Anti-FP. Obligatoire sur les datasets bruités, rares en texte, type **FRANÇAIS**. (Basé sur Event 31).
-* **Aggressive** : Priorité recall maximal. Sûr à utiliser sur les gros datasets purs, type **ANGLAIS**. (Basé sur Event 30).
-
-## 2. Baselines Officielles & Commandes Exactes Jour J
-
-🚨 **Préalable Windows Absolu** : Toujours préfixer la console avec `$env:PYTHONUTF8=1;` pour éviter les plantages lors de la lecture des emojis.
-
-### A. La Baseline Officielle (Submission Factory)
-L'Usine à soumissions exécute le pipeline ML central, croise les features Textuelles/Structurelles/Temporelles et filtre au travers de l'AntiFP pour produire les 3 CSV préconfigurés. 
-
-```powershell
-$env:PYTHONUTF8=1; python scripts/submission_factory.py --train data/train.csv --test data/test.csv
+```
++2  Vrai Positif   (bot correctement détecté)
+-2  Faux Négatif   (bot raté)
+-6  Faux Positif   (humain accusé à tort)
 ```
 
-### B. Cutdown Baseline (Plan B / Sécurité)
-Si le serveur manque de RAM ou que l'usine plante face à un volume imprévu, la fonction "Cutdown" abandonne l'AntiFP pour produire une prédiction brute, rapide et légère du profil par défaut.
+> **Avec le score officiel (+2 / -2 / -6), un faux positif coûte 3× un vrai positif. La stratégie par défaut doit donc minimiser les FP avant toute autre considération.**
 
+## 1. Politique Finale des Profils
+
+**`conservative` est le profil par DÉFAUT ABSOLU.**
+
+* **Conservative** (DÉFAUT) : Priorité absolue Anti-FP. Imposé par le scoring asymétrique (-6 FP). Obligatoire sur les datasets bruités, français, inconnus, ou à risque FP non négligeable.
+* **Balanced** : Compromis F1 / FP. Envisageable **uniquement** sur dataset anglais avec signal fort et faible ambiguïté.
+* **Aggressive** : Recall maximal. **Déconseillé** avec le scoring officiel — chaque FP supplémentaire coûte 3 bots ratés.
+
+### Résumé de Politique (5 lignes)
+
+1. **Français / bruité / inconnu → conservative**
+2. **Doute sur la nature des données → conservative**
+3. **Anglais + signal fort + faible ambiguïté → balanced (ou aggressive)**
+4. **Scoring officiel + risque FP non négligeable → conservative**
+5. **En cas de doute → conservative**
+
+## 2. Format Officiel
+
+* **Entrée** : `dataset.posts&users.XX.json`
+* **Sortie** : `BotOrNot.detections.XX.txt` — un user ID par ligne
+* **Pas de** : followers_count, following_count, source, edges
+
+## 3. Commandes Exactes Jour J
+
+🚨 **Préalable Windows Absolu** : Toujours préfixer avec `$env:PYTHONUTF8=1;`
+
+### A. Baseline Officielle (Submission Factory — Format Compétition)
 ```powershell
-$env:PYTHONUTF8=1; python scripts/run_cutdown.py --train data/train.csv --test data/test.csv --profile balanced
+$env:PYTHONUTF8=1; python scripts/submission_factory.py --train data/train.csv --test data/test.csv --format official
 ```
 
-## 3. Topologie des Sorties Attendues
+### B. Cutdown (Plan B / Urgence)
+```powershell
+$env:PYTHONUTF8=1; python scripts/run_cutdown.py --train data/train.csv --test data/test.csv --profile conservative
+```
 
-Après l'exécution de l'outil cible `submission_factory.py`, voici STRICTEMENT les fichiers attendus dans le dossier `artifacts/submissions/` : 
+### C. Vérification Score Officiel
+```powershell
+$env:PYTHONUTF8=1; python scripts/official_score.py --predicted predictions.txt --truth bots.txt
+```
 
-- `submission_conservative.csv` (Probabilités recalibrées)
-- `submission_conservative_meta.json` (Traceabilité)
-- `submission_balanced.csv` (Probabilités recalibrées)
-- `submission_balanced_meta.json` (Traceabilité)
-- `submission_aggressive.csv` (Probabilités brutes bas-seuil)
-- `submission_aggressive_meta.json` (Traceabilité)
-- `factory_report.json` (Synthèse croisée des métriques internes)
+## 4. Topologie des Sorties Attendues
 
-*Vous chargerez le fichier CSV correspondant à la recommandation émise.*
+Après exécution avec `--format official` :
 
-## 4. Manifestes Approuvés & Audités
-- Aide Mémoire Rapide de l'opérateur : `DECISION_CARD.md`.
-- Workflow Analytique Stratégique : `PLAYBOOK.md`.
-- Matrice d'intégrité (Check SHA-256) : `REPRO_AUDIT.md`.
+- `BotOrNot.detections.conservative.txt` ← **SOUMISSION PAR DÉFAUT**
+- `BotOrNot.detections.balanced.txt`
+- `BotOrNot.detections.aggressive.txt`
+- `submission_conservative.csv` (interne)
+- `submission_balanced.csv` (interne)
+- `submission_aggressive.csv` (interne)
+- `factory_report.json`
 
-Aucun autre changement majeur de fichier ne sera opéré. Bon courage.
+## 5. Manifestes Approuvés & Audités
+- Aide Mémoire Rapide : `DECISION_CARD.md`
+- Workflow Stratégique : `PLAYBOOK.md`
+- Audit de Reproductibilité : `REPRO_AUDIT.md`
+- Config Format Officiel : `configs/competition_profile.yaml`
+
+Aucun autre changement majeur ne sera opéré. Bon courage.
