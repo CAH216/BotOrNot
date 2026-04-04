@@ -1,4 +1,0 @@
-profil,threshold,blend_method,anti_fp_rules,expected_behavior
-conservative,0.4,lr_only,min_1mod_pen0.08_pu0.1,"Max Prec (Prec=1.000, F1=1.000, Rec=1.000, FP=0)"
-balanced,0.4,lr_only,min_1mod_pen0.08_pu0.1,"Max F1 (Prec=1.000, F1=1.000, Rec=1.000, FP=0)"
-aggressive,0.4,lr_only,min_1mod_pen0.08_pu0.1,"Max Recall (Prec=1.000, F1=1.000, Rec=1.000, FP=0)"

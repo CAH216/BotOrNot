@@ -1,2 +1,0 @@
-name,n_runs,classification,auroc_mean,auroc_std,auroc_min,auroc_max,auroc_median,pr_auc_mean,pr_auc_std,pr_auc_min,pr_auc_max,pr_auc_median,f1_mean,f1_std,f1_min,f1_max,f1_median,precision_mean,precision_std,precision_min,precision_max,precision_median,recall_mean,recall_std,recall_min,recall_max,recall_median,fp_mean,fp_std,fp_min,fp_max,fp_median,fn_mean,fn_std,fn_min,fn_max,fn_median
-golden_baseline,3,reference,1.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,1.0,0.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0

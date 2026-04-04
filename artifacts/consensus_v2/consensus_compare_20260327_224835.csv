@@ -1,4 +1,0 @@
-scorer,auroc,pr_auc,f1,precision,recall,fp,fn,auroc_std,pr_auc_std,f1_std,precision_std,recall_std,fp_std,fn_std
-V1,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-V2,1.0,1.0,1.0,1.0,1.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0,0.0
-delta,0.0,0.0,0.0,0.0,0.0,0.0,0.0,,,,,,,

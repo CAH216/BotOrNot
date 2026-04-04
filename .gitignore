@@ -1,0 +1,33 @@
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# Environment variables
+.env
+.env.local
+.env.*
+
+# Virtual environments
+venv/
+env/
+ENV/
+.venv/
+
+# Caches and artifacts
+.ipynb_checkpoints/
+artifacts/
+logs/
+*.log
+*.txt
+
+# Data folders (large files, raw events)
+data/
+datasets/
+*.csv
+*.parquet
+*.json
+
+# OS files
+.DS_Store
+Thumbs.db
